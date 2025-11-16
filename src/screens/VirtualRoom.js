@@ -1,32 +1,24 @@
+// VirtualRoom.js
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
 import Header from '../components/Header';
-
-const { width: screenWidth } = Dimensions.get('window');
-const videoHeight = (screenWidth * 9) / 16; // 16:9 aspect ratio
+import VideoContainer from '../components/VideoContainer';
+import DanceFloor from '../components/DanceFloor'; // adjust path if needed
 
 export default function VirtualRoom() {
   return (
     <SafeAreaView style={styles.container}>
       <Header />
-      <View style={styles.videoContainer}>
-        <YoutubePlayer
-          height={videoHeight}
-          videoId="dQw4w9WgXcQ"
-          playerParams={{
-            controls: 0,          // hide YouTube controls
-            modestbranding: 1,    // reduce branding
-            rel: 0,
-            showinfo: 0,
-            playsinline: 1,
-          }}
+      <VideoContainer />
+      <View style={styles.floorContainer}>
+        <DanceFloor
+          source={{ uri: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200' }}
+          style={styles.floor}
+          // optional props:
+          // initialPosition={{ x: 100, y: 120 }}
+          // animationDuration={400}
         />
       </View>
-      <Text style={styles.text}>
-        This is the Virtual haha1
-      </Text>
     </SafeAreaView>
   );
 }
@@ -35,12 +27,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  videoContainer: {
-    width: '100%',
-    overflow: 'hidden',
+  floorContainer: {
+    flex: 1,
   },
-  text: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  floor: {
+    flex: 1,
+    width: '100%',
   },
 });

@@ -12,8 +12,8 @@ export default function Header() {
       </View>
       <View style={styles.rightContainer}>
         <View style={styles.iconWithText}>
-          <FontAwesome5 name="user-friends" size={15} color="#ffffff" />
-          <Text style={styles.text}>5</Text>
+          <FontAwesome5 name="user-friends" size={15} color="#67e8f9" />
+          <Text style={styles.count}>5</Text>
         </View>
         <View style={styles.iconWithText}>
         <FontAwesome5 name="user-plus" size={15} color="#ffffff" />
@@ -50,10 +50,15 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 10,
   },
+  count:{
+    color: '#67e8f9',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
   text: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
   },
   rightContainer: {
     flexDirection: 'row',
