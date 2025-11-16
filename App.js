@@ -15,7 +15,11 @@ export default function App() {
           <Stack.Screen
             name="VirtualRoom"
             component={VirtualRoom}
-            options={{ headerShown: false }} />
+            options={{
+              headerShown: false,
+              statusBarColor: 'transparent',
+              statusBarTranslucent: true,
+            }} />
           <Stack.Screen
             name="Home"
             component={HomeScreen}
