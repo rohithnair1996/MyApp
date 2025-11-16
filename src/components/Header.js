@@ -31,8 +31,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#1d283a',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   circleView: {
     width: 50,
