@@ -1,7 +1,7 @@
 import React from 'react';
 import User from './User';
 
-const UserList = ({ users, radius = 25 }) => {
+const UserList = ({ users }) => {
   return (
     <>
       {users.map((user) => (
@@ -9,7 +9,6 @@ const UserList = ({ users, radius = 25 }) => {
           key={user.id}
           x={user.x}
           y={user.y}
-          radius={radius}
           color={user.color}
         />
       ))}
