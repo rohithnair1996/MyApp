@@ -7,6 +7,7 @@ import Player from '../components/Player';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { COLORS } from '../constants/colors';
+import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
 
 const { BODY_WIDTH, BODY_HEIGHT } = CHARACTER_DIMENSIONS;
 
@@ -17,12 +18,12 @@ const Floor = () => {
   // Player movement hook
   const { playerX, playerY, moveToPosition } = usePlayerMovement(width / 2, height / 2);
 
-  // Other users on the floor (memoized to prevent recreation on every render)
-  const otherUsers = useMemo(() => [
+  // Other users on the floor (now in state so it can be updated)
+  const [otherUsers, setOtherUsers] = useState([
     { id: '1', x: 100, y: 150, color: COLORS.USER_RED },
     { id: '2', x: 300, y: 400, color: COLORS.USER_CYAN },
     { id: '3', x: 250, y: 200, color: COLORS.USER_YELLOW },
-  ], []);
+  ]);
 
   // Check if touch point is within a user's rectangular body (memoized)
   const checkUserClick = useCallback((touchX, touchY) => {
@@ -52,8 +53,81 @@ const Floor = () => {
     setDimensions({ width, height });
   }, []);
 
+  /**
+   * Send player position to API using percentage values
+   * Call this function when you want to update player position on the server
+   */
+  const sendPositionToAPI = useCallback(async (x, y) => {
+    const position = formatPositionForAPI(x, y, width, height);
+
+    console.log('Sending position to API:', position);
+    // Example: Replace with your actual API call
+    // try {
+    //   const response = await fetch('YOUR_API_ENDPOINT/player/position', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ x: position.x, y: position.y }),
+    //   });
+    //   const data = await response.json();
+    //   return data;
+    // } catch (error) {
+    //   console.error('Error sending position:', error);
+    // }
+
+    return position;
+  }, [width, height]);
+
+  /**
+   * Update other users' positions from API data (percentage values)
+   * Call this function when you receive position updates from the server
+   * @param {Array} apiUsers - Array of users with percentage-based positions
+   * Example: [{ id: '1', x: 25.5, y: 30.2, color: '#FF6B6B' }]
+   */
+  const updateOtherUsersPosition = useCallback((apiUsers) => {
+    if (!Array.isArray(apiUsers)) {
+      console.error('updateOtherUsersPosition: apiUsers must be an array');
+      return;
+    }
+
+    const updatedUsers = apiUsers.map(apiUser => {
+      const { x, y } = parsePositionFromAPI(
+        { x: apiUser.x, y: apiUser.y },
+        width,
+        height
+      );
+
+      return {
+        ...apiUser,
+        x,
+        y,
+      };
+    });
+
+    setOtherUsers(updatedUsers);
+  }, [width, height]);
+
+  /**
+   * Move a specific user to a new position (using percentage values from API)
+   * @param {string} userId - The ID of the user to move
+   * @param {number} xPercent - X percentage (0-100)
+   * @param {number} yPercent - Y percentage (0-100)
+   */
+  const moveOtherUser = useCallback((userId, xPercent, yPercent) => {
+    const { x, y } = parsePositionFromAPI(
+      { x: xPercent, y: yPercent },
+      width,
+      height
+    );
+
+    setOtherUsers(prevUsers =>
+      prevUsers.map(user =>
+        user.id === userId ? { ...user, x, y } : user
+      )
+    );
+  }, [width, height]);
+
   // Handle touch events (memoized)
-  const handlePress = useCallback((event) => {
+  const handlePress = useCallback(async (event) => {
     const { locationX, locationY } = event.nativeEvent;
 
     // Check if user was clicked
@@ -63,9 +137,12 @@ const Floor = () => {
       return;
     }
 
-    // Otherwise, move player to clicked position
+    // Move player to clicked position
     moveToPosition(locationX, locationY);
-  }, [checkUserClick, moveToPosition]);
+
+    // Send position to API with percentage values
+    await sendPositionToAPI(locationX, locationY);
+  }, [checkUserClick, moveToPosition, sendPositionToAPI]);
 
   return (
     <Pressable style={styles.container} onPress={handlePress} onLayout={handleLayout}>
