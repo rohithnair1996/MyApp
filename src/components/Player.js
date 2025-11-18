@@ -1,70 +1,85 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RoundedRect, Path, Skia } from '@shopify/react-native-skia';
 import { useDerivedValue } from 'react-native-reanimated';
+import { CHARACTER_DIMENSIONS } from '../constants/character';
+import { COLORS } from '../constants/colors';
 
-const Player = ({ x, y, color = '#00FF00' }) => {
-  // Dimensions for the human figure (larger body for easier thumb interaction)
-  const bodyWidth = 24;
-  const bodyHeight = 30;
-  const legLength = 12;
-  const legHorizontal = 6;
-  const armLength = 10;
-  const armHorizontal = 5;
+const {
+  BODY_WIDTH,
+  BODY_HEIGHT,
+  LEG_LENGTH,
+  LEG_HORIZONTAL,
+  ARM_LENGTH,
+  ARM_HORIZONTAL,
+} = CHARACTER_DIMENSIONS;
 
-  // Convert SharedValues to regular values for calculations
-  const leftLegPath = useDerivedValue(() => {
-    const xVal = typeof x.value === 'number' ? x.value : x;
-    const yVal = typeof y.value === 'number' ? y.value : y;
+const Player = ({ x, y, color = COLORS.PLAYER_GREEN }) => {
+  // Create all paths in a single useDerivedValue for better performance
+  const paths = useDerivedValue(() => {
+    'worklet';
+    // Extract value from SharedValue or regular number
+    const xVal = typeof x?.value === 'number' ? x.value : x;
+    const yVal = typeof y?.value === 'number' ? y.value : y;
 
-    const path = Skia.Path.Make();
-    path.moveTo(xVal - bodyWidth / 4, yVal + bodyHeight / 2);
-    path.lineTo(xVal - bodyWidth / 4, yVal + bodyHeight / 2 + legLength);
-    path.lineTo(xVal - bodyWidth / 4 - legHorizontal, yVal + bodyHeight / 2 + legLength);
-    return path;
-  }, [x, y]);
+    // Left leg path
+    const leftLeg = Skia.Path.Make();
+    leftLeg.moveTo(xVal - BODY_WIDTH / 4, yVal + BODY_HEIGHT / 2);
+    leftLeg.lineTo(xVal - BODY_WIDTH / 4, yVal + BODY_HEIGHT / 2 + LEG_LENGTH);
+    leftLeg.lineTo(xVal - BODY_WIDTH / 4 - LEG_HORIZONTAL, yVal + BODY_HEIGHT / 2 + LEG_LENGTH);
 
-  const rightLegPath = useDerivedValue(() => {
-    const xVal = typeof x.value === 'number' ? x.value : x;
-    const yVal = typeof y.value === 'number' ? y.value : y;
+    // Right leg path
+    const rightLeg = Skia.Path.Make();
+    rightLeg.moveTo(xVal + BODY_WIDTH / 4, yVal + BODY_HEIGHT / 2);
+    rightLeg.lineTo(xVal + BODY_WIDTH / 4, yVal + BODY_HEIGHT / 2 + LEG_LENGTH);
+    rightLeg.lineTo(xVal + BODY_WIDTH / 4 + LEG_HORIZONTAL, yVal + BODY_HEIGHT / 2 + LEG_LENGTH);
 
-    const path = Skia.Path.Make();
-    path.moveTo(xVal + bodyWidth / 4, yVal + bodyHeight / 2);
-    path.lineTo(xVal + bodyWidth / 4, yVal + bodyHeight / 2 + legLength);
-    path.lineTo(xVal + bodyWidth / 4 + legHorizontal, yVal + bodyHeight / 2 + legLength);
-    return path;
-  }, [x, y]);
+    // Left arm path
+    const leftArm = Skia.Path.Make();
+    leftArm.moveTo(xVal - BODY_WIDTH / 2, yVal - BODY_HEIGHT / 4);
+    leftArm.lineTo(xVal - BODY_WIDTH / 2 - ARM_LENGTH, yVal - BODY_HEIGHT / 4);
+    leftArm.lineTo(xVal - BODY_WIDTH / 2 - ARM_LENGTH, yVal - BODY_HEIGHT / 4 + ARM_HORIZONTAL);
 
-  const leftArmPath = useDerivedValue(() => {
-    const xVal = typeof x.value === 'number' ? x.value : x;
-    const yVal = typeof y.value === 'number' ? y.value : y;
+    // Right arm path
+    const rightArm = Skia.Path.Make();
+    rightArm.moveTo(xVal + BODY_WIDTH / 2, yVal - BODY_HEIGHT / 4);
+    rightArm.lineTo(xVal + BODY_WIDTH / 2 + ARM_LENGTH, yVal - BODY_HEIGHT / 4);
+    rightArm.lineTo(xVal + BODY_WIDTH / 2 + ARM_LENGTH, yVal - BODY_HEIGHT / 4 + ARM_HORIZONTAL);
 
-    const path = Skia.Path.Make();
-    path.moveTo(xVal - bodyWidth / 2, yVal - bodyHeight / 4);
-    path.lineTo(xVal - bodyWidth / 2 - armLength, yVal - bodyHeight / 4);
-    path.lineTo(xVal - bodyWidth / 2 - armLength, yVal - bodyHeight / 4 + armHorizontal);
-    return path;
-  }, [x, y]);
-
-  const rightArmPath = useDerivedValue(() => {
-    const xVal = typeof x.value === 'number' ? x.value : x;
-    const yVal = typeof y.value === 'number' ? y.value : y;
-
-    const path = Skia.Path.Make();
-    path.moveTo(xVal + bodyWidth / 2, yVal - bodyHeight / 4);
-    path.lineTo(xVal + bodyWidth / 2 + armLength, yVal - bodyHeight / 4);
-    path.lineTo(xVal + bodyWidth / 2 + armLength, yVal - bodyHeight / 4 + armHorizontal);
-    return path;
+    return { leftLeg, rightLeg, leftArm, rightArm };
   }, [x, y]);
 
   const bodyX = useDerivedValue(() => {
-    const xVal = typeof x.value === 'number' ? x.value : x;
-    return xVal - bodyWidth / 2;
+    'worklet';
+    const xVal = typeof x?.value === 'number' ? x.value : x;
+    return xVal - BODY_WIDTH / 2;
   }, [x]);
 
   const bodyY = useDerivedValue(() => {
-    const yVal = typeof y.value === 'number' ? y.value : y;
-    return yVal - bodyHeight / 2;
+    'worklet';
+    const yVal = typeof y?.value === 'number' ? y.value : y;
+    return yVal - BODY_HEIGHT / 2;
   }, [y]);
+
+  // Create individual path derived values
+  const leftArmPath = useDerivedValue(() => {
+    'worklet';
+    return paths.value.leftArm;
+  }, [paths]);
+
+  const rightArmPath = useDerivedValue(() => {
+    'worklet';
+    return paths.value.rightArm;
+  }, [paths]);
+
+  const leftLegPath = useDerivedValue(() => {
+    'worklet';
+    return paths.value.leftLeg;
+  }, [paths]);
+
+  const rightLegPath = useDerivedValue(() => {
+    'worklet';
+    return paths.value.rightLeg;
+  }, [paths]);
 
   return (
     <>
@@ -76,8 +91,8 @@ const Player = ({ x, y, color = '#00FF00' }) => {
       <RoundedRect
         x={bodyX}
         y={bodyY}
-        width={bodyWidth}
-        height={bodyHeight}
+        width={BODY_WIDTH}
+        height={BODY_HEIGHT}
         r={4}
         color={color}
       />
@@ -89,4 +104,4 @@ const Player = ({ x, y, color = '#00FF00' }) => {
   );
 };
 
-export default Player;
+export default React.memo(Player);

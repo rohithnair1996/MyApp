@@ -16,4 +16,4 @@ const UserList = ({ users }) => {
   );
 };
 
-export default UserList;
+export default React.memo(UserList);

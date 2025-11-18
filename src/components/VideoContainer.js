@@ -1,19 +1,21 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import YoutubePlayer from 'react-native-youtube-iframe';
 
-export default function VideoContainer({ videoId = 'tXRuaacO-ZU' }) {
+const DEFAULT_VIDEO_ID = 'tXRuaacO-ZU';
+
+const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID }) => {
   const [playing, setPlaying] = useState(true);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  // Calculate video height based on actual container width (16:9 aspect ratio)
-  const videoHeight = (containerWidth * 9) / 16;
+  // Calculate video height based on actual container width (16:9 aspect ratio) - memoized
+  const videoHeight = useMemo(() => (containerWidth * 9) / 16, [containerWidth]);
 
-  // Measure actual container width
-  const handleLayout = (event) => {
+  // Measure actual container width (memoized)
+  const handleLayout = useCallback((event) => {
     const { width } = event.nativeEvent.layout;
     setContainerWidth(width);
-  };
+  }, []);
 
   // Autoplay when videoId changes
   useEffect(() => {
@@ -56,4 +58,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
+
+export default React.memo(VideoContainer);
 

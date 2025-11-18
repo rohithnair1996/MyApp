@@ -1,12 +1,17 @@
+import { useCallback } from 'react';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
-
-const WALKING_SPEED = 150; // pixels per second
+import { WALKING_SPEED } from '../constants/character';
 
 export const usePlayerMovement = (initialX, initialY) => {
   const playerX = useSharedValue(initialX);
   const playerY = useSharedValue(initialY);
 
-  const moveToPosition = (targetX, targetY) => {
+  const moveToPosition = useCallback((targetX, targetY) => {
+    // Input validation
+    if (typeof targetX !== 'number' || typeof targetY !== 'number') {
+      return;
+    }
+
     // Calculate distance from current position to target
     const currentX = playerX.value;
     const currentY = playerY.value;
@@ -20,7 +25,7 @@ export const usePlayerMovement = (initialX, initialY) => {
     // Animate player movement to touched position with constant speed
     playerX.value = withTiming(targetX, { duration });
     playerY.value = withTiming(targetY, { duration });
-  };
+  }, [playerX, playerY]);
 
   return {
     playerX,

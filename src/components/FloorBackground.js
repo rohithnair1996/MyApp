@@ -20,4 +20,4 @@ const FloorBackground = ({ width, height, imagePath }) => {
   );
 };
 
-export default FloorBackground;
+export default React.memo(FloorBackground);
