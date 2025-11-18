@@ -1,10 +1,12 @@
 import React from 'react';
 import { Canvas } from '@shopify/react-native-skia';
-import { useWindowDimensions, StyleSheet, Pressable } from 'react-native';
+import { useWindowDimensions, StyleSheet, Pressable, Alert } from 'react-native';
 import FloorBackground from '../components/FloorBackground';
 import UserList from '../components/UserList';
 import Player from '../components/Player';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
+
+const USER_RADIUS = 10;
 
 const Floor = () => {
   const { width, height } = useWindowDimensions();
@@ -19,9 +21,31 @@ const Floor = () => {
     { id: '3', x: 250, y: 200, color: '#FFE66D' },
   ];
 
+  // Check if touch point is within a user's circle
+  const checkUserClick = (touchX, touchY) => {
+    for (const user of otherUsers) {
+      const distance = Math.sqrt(
+        Math.pow(touchX - user.x, 2) + Math.pow(touchY - user.y, 2)
+      );
+      if (distance <= USER_RADIUS) {
+        return user;
+      }
+    }
+    return null;
+  };
+
   // Handle touch events
   const handlePress = (event) => {
     const { locationX, locationY } = event.nativeEvent;
+
+    // Check if user was clicked
+    const clickedUser = checkUserClick(locationX, locationY);
+    if (clickedUser) {
+      Alert.alert('User Clicked', `User ID: ${clickedUser.id}`);
+      return;
+    }
+
+    // Otherwise, move player to clicked position
     moveToPosition(locationX, locationY);
   };
 
@@ -36,10 +60,10 @@ const Floor = () => {
         />
 
         {/* Other users */}
-        <UserList users={otherUsers} radius={25} opacity={0.8} />
+        <UserList users={otherUsers} radius={USER_RADIUS} />
 
         {/* Current player (you) */}
-        <Player x={playerX} y={playerY} radius={25} color="#00FF00" opacity={0.9} />
+        <Player x={playerX} y={playerY} radius={USER_RADIUS} color="#00FF00" opacity={0.9} />
       </Canvas>
     </Pressable>
   );

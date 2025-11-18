@@ -1,7 +1,7 @@
 import React from 'react';
 import User from './User';
 
-const UserList = ({ users, radius = 25, opacity = 0.8 }) => {
+const UserList = ({ users, radius = 25 }) => {
   return (
     <>
       {users.map((user) => (
@@ -11,7 +11,6 @@ const UserList = ({ users, radius = 25, opacity = 0.8 }) => {
           y={user.y}
           radius={radius}
           color={user.color}
-          opacity={opacity}
         />
       ))}
     </>
