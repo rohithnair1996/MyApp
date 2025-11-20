@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
-import { StyleSheet, Pressable, Alert } from 'react-native';
+import { StyleSheet, Pressable, View, Text, TouchableOpacity } from 'react-native';
 import FloorBackground from '../components/FloorBackground';
 import UserList from '../components/UserList';
 import Player from '../components/Player';
+import Tomato from '../components/Tomato';
+import BottomSheet from '../components/BottomSheet';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { COLORS } from '../constants/colors';
@@ -24,6 +26,13 @@ const Floor = () => {
     { id: '2', x: 300, y: 400, color: COLORS.USER_CYAN },
     { id: '3', x: 250, y: 200, color: COLORS.USER_YELLOW },
   ]);
+
+  // Bottom sheet state
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  // Tomato visibility state
+  const [showTomato, setShowTomato] = useState(false);
 
   // Check if touch point is within a user's rectangular body (memoized)
   const checkUserClick = useCallback((touchX, touchY) => {
@@ -129,11 +138,15 @@ const Floor = () => {
   // Handle touch events (memoized)
   const handlePress = useCallback(async (event) => {
     const { locationX, locationY } = event.nativeEvent;
+    console.log('Touch at:', locationX, locationY);
 
     // Check if user was clicked
     const clickedUser = checkUserClick(locationX, locationY);
+    console.log('Clicked user:', clickedUser);
     if (clickedUser) {
-      Alert.alert('User Clicked', `User ID: ${clickedUser.id}`);
+      console.log('Opening bottom sheet for user:', clickedUser.id);
+      setSelectedUser(clickedUser);
+      setIsBottomSheetVisible(true);
       return;
     }
 
@@ -145,26 +158,55 @@ const Floor = () => {
   }, [checkUserClick, moveToPosition, sendPositionToAPI]);
 
   return (
-    <Pressable style={styles.container} onPress={handlePress} onLayout={handleLayout}>
-      <Canvas style={styles.canvas}>
-        {width > 0 && height > 0 && (
-          <>
-            {/* Floor background image */}
-            <FloorBackground
-              width={width}
-              height={height}
-              imagePath={require('../images/floor.jpeg')}
-            />
+    <>
+      <Pressable style={styles.container} onPress={handlePress} onLayout={handleLayout}>
+        <Canvas style={styles.canvas}>
+          {width > 0 && height > 0 && (
+            <>
+              {/* Floor background image */}
+              <FloorBackground
+                width={width}
+                height={height}
+                imagePath={require('../images/floor.jpeg')}
+              />
 
-            {/* Other users */}
-            <UserList users={otherUsers} />
+              {/* Other users */}
+              <UserList users={otherUsers} />
 
-            {/* Current player (you) */}
-            <Player x={playerX} y={playerY} color="#00FF00" />
-          </>
+              {/* Current player (you) */}
+              <Player x={playerX} y={playerY} color="#00FF00" />
+
+              {/* Tomato above player's head (only when thrown) */}
+              {showTomato && <Tomato x={playerX} y={playerY} />}
+            </>
+          )}
+        </Canvas>
+      </Pressable>
+
+      {/* Bottom Sheet for Player Actions */}
+      <BottomSheet
+        visible={isBottomSheetVisible}
+        onClose={() => setIsBottomSheetVisible(false)}
+        height={250}
+      >
+        {selectedUser && (
+          <View style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetTitle}>Player Actions</Text>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                console.log('Throwing tomato at user:', selectedUser.id);
+                setShowTomato(true);
+                setIsBottomSheetVisible(false);
+              }}
+            >
+              <Text style={styles.actionButtonText}>🍅 Throw a tomato</Text>
+            </TouchableOpacity>
+          </View>
         )}
-      </Canvas>
-    </Pressable>
+      </BottomSheet>
+    </>
   );
 };
 
@@ -174,6 +216,29 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
+  },
+  bottomSheetContent: {
+    flex: 1,
+    paddingVertical: 20,
+  },
+  bottomSheetTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    color: '#333',
+  },
+  actionButton: {
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  actionButtonText: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '600',
   },
 });
 
