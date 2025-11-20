@@ -5,6 +5,7 @@ import FloorBackground from '../components/FloorBackground';
 import UserList from '../components/UserList';
 import Player from '../components/Player';
 import Tomato from '../components/Tomato';
+import Plane from '../components/Plane';
 import BottomSheet from '../components/BottomSheet';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
@@ -34,6 +35,10 @@ const Floor = () => {
   // Tomato visibility and target state
   const [showTomato, setShowTomato] = useState(false);
   const [tomatoTarget, setTomatoTarget] = useState(null);
+
+  // Plane visibility and target state
+  const [showPlane, setShowPlane] = useState(false);
+  const [planeTarget, setPlaneTarget] = useState(null);
 
   // Check if touch point is within a user's rectangular body (memoized)
   const checkUserClick = useCallback((touchX, touchY) => {
@@ -187,6 +192,17 @@ const Floor = () => {
                   onAnimationComplete={() => setShowTomato(false)}
                 />
               )}
+
+              {/* Plane above player's head (only when thrown) */}
+              {showPlane && planeTarget && (
+                <Plane
+                  startX={playerX}
+                  startY={playerY}
+                  targetX={planeTarget.x}
+                  targetY={planeTarget.y}
+                  onAnimationComplete={() => setShowPlane(false)}
+                />
+              )}
             </>
           )}
         </Canvas>
@@ -196,7 +212,7 @@ const Floor = () => {
       <BottomSheet
         visible={isBottomSheetVisible}
         onClose={() => setIsBottomSheetVisible(false)}
-        height={250}
+        height={300}
       >
         {selectedUser && (
           <View style={styles.bottomSheetContent}>
@@ -212,6 +228,18 @@ const Floor = () => {
               }}
             >
               <Text style={styles.actionButtonText}>🍅 Throw a tomato</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonSpacing]}
+              onPress={() => {
+                console.log('Sending message to user:', selectedUser.id);
+                setPlaneTarget({ x: selectedUser.x, y: selectedUser.y });
+                setShowPlane(true);
+                setIsBottomSheetVisible(false);
+              }}
+            >
+              <Text style={styles.actionButtonText}>✈️ Send message</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -244,6 +272,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  actionButtonSpacing: {
+    marginTop: 12,
   },
   actionButtonText: {
     fontSize: 18,
