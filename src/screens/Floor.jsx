@@ -31,8 +31,9 @@ const Floor = () => {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Tomato visibility state
+  // Tomato visibility and target state
   const [showTomato, setShowTomato] = useState(false);
+  const [tomatoTarget, setTomatoTarget] = useState(null);
 
   // Check if touch point is within a user's rectangular body (memoized)
   const checkUserClick = useCallback((touchX, touchY) => {
@@ -177,7 +178,15 @@ const Floor = () => {
               <Player x={playerX} y={playerY} color="#00FF00" />
 
               {/* Tomato above player's head (only when thrown) */}
-              {showTomato && <Tomato x={playerX} y={playerY} />}
+              {showTomato && tomatoTarget && (
+                <Tomato
+                  startX={playerX}
+                  startY={playerY}
+                  targetX={tomatoTarget.x}
+                  targetY={tomatoTarget.y}
+                  onAnimationComplete={() => setShowTomato(false)}
+                />
+              )}
             </>
           )}
         </Canvas>
@@ -197,6 +206,7 @@ const Floor = () => {
               style={styles.actionButton}
               onPress={() => {
                 console.log('Throwing tomato at user:', selectedUser.id);
+                setTomatoTarget({ x: selectedUser.x, y: selectedUser.y });
                 setShowTomato(true);
                 setIsBottomSheetVisible(false);
               }}
