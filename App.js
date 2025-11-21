@@ -4,8 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './src/screens/HomeScreen';
 import VirtualRoom from './src/screens/VirtualRoom';
-import LoginScreen from './src/screens/LoginScreen';
-import SignupScreen from './src/screens/SignupScreen';
+import LandingScreen from './src/screens/LandingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,22 +12,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login">
+        <Stack.Navigator initialRouteName="Landing">
           <Stack.Screen
-            name="Login"
-            component={LoginScreen}
+            name="Landing"
+            component={LandingScreen}
             options={{
               headerShown: false,
-              statusBarColor: 'transparent',
-              statusBarTranslucent: true,
-            }}
-          />
-          <Stack.Screen
-            name="Signup"
-            component={SignupScreen}
-            options={{
-              headerShown: false,
-              statusBarColor: 'transparent',
+              statusBarColor: '#000000',
               statusBarTranslucent: true,
             }}
           />
