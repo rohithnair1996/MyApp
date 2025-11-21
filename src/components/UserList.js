@@ -10,6 +10,7 @@ const UserList = ({ users }) => {
           x={user.x}
           y={user.y}
           color={user.color}
+          image={user.image}
         />
       ))}
     </>

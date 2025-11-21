@@ -3,7 +3,7 @@ import { Circle, Path, Skia } from '@shopify/react-native-skia';
 import { useSharedValue, useDerivedValue, withTiming, runOnJS, Easing } from 'react-native-reanimated';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 
-const TOMATO_RADIUS = 15;
+const TOMATO_RADIUS = 25;
 const ANIMATION_DURATION = 800; // milliseconds
 const ARC_HEIGHT = 80; // Height of the arc for the throw
 

@@ -3,7 +3,7 @@ import { useSharedValue, useDerivedValue, withTiming, runOnJS, Easing } from 're
 import { Path, Skia } from '@shopify/react-native-skia';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 
-const ANIMATION_DURATION = 1000; // milliseconds - slightly longer for message
+const ANIMATION_DURATION = 2000; // milliseconds - slightly longer for message
 const ARC_HEIGHT = 60; // Flatter arc for plane
 
 const Plane = ({ startX, startY, targetX, targetY, onAnimationComplete }) => {
@@ -74,7 +74,7 @@ const Plane = ({ startX, startY, targetX, targetY, onAnimationComplete }) => {
     const x = planeX.value;
     const y = planeY.value;
     const angle = (rotation.value * Math.PI) / 180;
-    const size = 20; // Plane size
+    const size = 40; // Plane size
 
     const path = Skia.Path.Make();
 
@@ -128,7 +128,7 @@ const Plane = ({ startX, startY, targetX, targetY, onAnimationComplete }) => {
       {/* Motion trail */}
       <Path
         path={trailPath}
-        color="rgba(100, 149, 237, 0.4)"
+        color="rgba(255, 255, 255, 0.6)"
         style="stroke"
         strokeWidth={2}
         strokeCap="round"
@@ -137,14 +137,14 @@ const Plane = ({ startX, startY, targetX, targetY, onAnimationComplete }) => {
       {/* Paper plane body */}
       <Path
         path={planePath}
-        color="#4A90E2"
+        color="#FFFFFF"
         style="fill"
       />
 
       {/* Plane outline */}
       <Path
         path={planePath}
-        color="#2E5C8A"
+        color="#CCCCCC"
         style="stroke"
         strokeWidth={1.5}
       />

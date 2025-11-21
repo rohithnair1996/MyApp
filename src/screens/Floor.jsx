@@ -7,6 +7,7 @@ import Player from '../components/Player';
 import Tomato from '../components/Tomato';
 import Plane from '../components/Plane';
 import BottomSheet from '../components/BottomSheet';
+import MessagePopup from '../components/MessagePopup';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { COLORS } from '../constants/colors';
@@ -23,9 +24,9 @@ const Floor = () => {
 
   // Other users on the floor (now in state so it can be updated)
   const [otherUsers, setOtherUsers] = useState([
-    { id: '1', x: 100, y: 150, color: COLORS.USER_RED },
-    { id: '2', x: 300, y: 400, color: COLORS.USER_CYAN },
-    { id: '3', x: 250, y: 200, color: COLORS.USER_YELLOW },
+    { id: '1', x: 100, y: 150, color: COLORS.USER_RED, image: require('../assets/a1.png') },
+    { id: '2', x: 300, y: 400, color: COLORS.USER_CYAN, image: require('../assets/a2.png') },
+    { id: '3', x: 250, y: 200, color: COLORS.USER_YELLOW, image: require('../assets/a3.png') },
   ]);
 
   // Bottom sheet state
@@ -39,6 +40,10 @@ const Floor = () => {
   // Plane visibility and target state
   const [showPlane, setShowPlane] = useState(false);
   const [planeTarget, setPlaneTarget] = useState(null);
+
+  // Message popup state
+  const [isMessagePopupVisible, setIsMessagePopupVisible] = useState(false);
+  const [messageRecipient, setMessageRecipient] = useState(null);
 
   // Check if touch point is within a user's rectangular body (memoized)
   const checkUserClick = useCallback((touchX, touchY) => {
@@ -141,6 +146,16 @@ const Floor = () => {
     );
   }, [width, height]);
 
+  // Handle message send from popup
+  const handleSendMessage = useCallback((message) => {
+    if (messageRecipient) {
+      console.log('Sending message to user:', messageRecipient.id, 'Message:', message);
+      setPlaneTarget({ x: messageRecipient.x, y: messageRecipient.y });
+      setShowPlane(true);
+      setMessageRecipient(null);
+    }
+  }, [messageRecipient]);
+
   // Handle touch events (memoized)
   const handlePress = useCallback(async (event) => {
     const { locationX, locationY } = event.nativeEvent;
@@ -173,14 +188,14 @@ const Floor = () => {
               <FloorBackground
                 width={width}
                 height={height}
-                imagePath={require('../images/floor.jpeg')}
+                imagePath={require('../images/floor3.png')}
               />
 
               {/* Other users */}
               <UserList users={otherUsers} />
 
               {/* Current player (you) */}
-              <Player x={playerX} y={playerY} color="#00FF00" />
+              <Player x={playerX} y={playerY} color="#00FF00" image={require('../assets/a4.png')} />
 
               {/* Tomato above player's head (only when thrown) */}
               {showTomato && tomatoTarget && (
@@ -233,10 +248,13 @@ const Floor = () => {
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSpacing]}
               onPress={() => {
-                console.log('Sending message to user:', selectedUser.id);
-                setPlaneTarget({ x: selectedUser.x, y: selectedUser.y });
-                setShowPlane(true);
+                console.log('Opening message popup for user:', selectedUser.id);
+                setMessageRecipient(selectedUser);
                 setIsBottomSheetVisible(false);
+                // Use setTimeout to show popup after bottomsheet closes
+                setTimeout(() => {
+                  setIsMessagePopupVisible(true);
+                }, 300);
               }}
             >
               <Text style={styles.actionButtonText}>✈️ Send message</Text>
@@ -244,6 +262,16 @@ const Floor = () => {
           </View>
         )}
       </BottomSheet>
+
+      {/* Message Popup */}
+      <MessagePopup
+        visible={isMessagePopupVisible}
+        onClose={() => {
+          setIsMessagePopupVisible(false);
+          setMessageRecipient(null);
+        }}
+        onSend={handleSendMessage}
+      />
     </>
   );
 };
