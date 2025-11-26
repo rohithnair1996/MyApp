@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
 import { StyleSheet, Pressable, View, Text, TouchableOpacity } from 'react-native';
 import FloorBackground from '../components/FloorBackground';
@@ -9,6 +9,7 @@ import Plane from '../components/Plane';
 import BottomSheet from '../components/BottomSheet';
 import MessagePopup from '../components/MessagePopup';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
+import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { COLORS } from '../constants/colors';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
@@ -19,23 +20,45 @@ const Floor = () => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { width, height } = dimensions;
 
+  // WebSocket connection for multiplayer
+  const { isConnected, players, myUserId, movePlayer, throwTomato, incomingTomatoThrows, clearTomatoThrow } = useGameSocket();
+
   // Player movement hook
   const { playerX, playerY, moveToPosition } = usePlayerMovement(width / 2, height / 2);
 
-  // Other users on the floor (now in state so it can be updated)
-  const [otherUsers, setOtherUsers] = useState([
-    { id: '1', x: 100, y: 150, color: COLORS.USER_RED, image: require('../assets/a1.png') },
-    { id: '2', x: 300, y: 400, color: COLORS.USER_CYAN, image: require('../assets/a2.png') },
-    { id: '3', x: 250, y: 200, color: COLORS.USER_YELLOW, image: require('../assets/a3.png') },
-  ]);
+  // Convert server players (percentage) to pixel positions for display
+  const otherUsers = useMemo(() => {
+    if (width === 0 || height === 0) return [];
+
+    return players
+      .filter(player => player.userId !== myUserId) // Don't show yourself as another player
+      .map(player => {
+        const { x, y } = parsePositionFromAPI(
+          { x: player.x, y: player.y },
+          width,
+          height
+        );
+        return {
+          id: player.userId,
+          x,
+          y,
+          color: COLORS.USER_RED, // You can randomize or assign colors based on userId
+          image: require('../assets/a1.png'), // You can assign different avatars
+          username: player.username,
+        };
+      });
+  }, [players, myUserId, width, height]);
 
   // Bottom sheet state
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Tomato visibility and target state
+  // Tomato visibility and target state (for tomatoes you throw)
   const [showTomato, setShowTomato] = useState(false);
   const [tomatoTarget, setTomatoTarget] = useState(null);
+
+  // Incoming tomato throws (tomatoes thrown at you or others)
+  const [activeTomatoThrows, setActiveTomatoThrows] = useState([]);
 
   // Plane visibility and target state
   const [showPlane, setShowPlane] = useState(false);
@@ -73,78 +96,60 @@ const Floor = () => {
     setDimensions({ width, height });
   }, []);
 
-  /**
-   * Send player position to API using percentage values
-   * Call this function when you want to update player position on the server
-   */
-  const sendPositionToAPI = useCallback(async (x, y) => {
-    const position = formatPositionForAPI(x, y, width, height);
+  // Handle incoming tomato throws from WebSocket
+  useEffect(() => {
+    if (width === 0 || height === 0) return;
 
-    console.log('Sending position to API:', position);
-    // Example: Replace with your actual API call
-    // try {
-    //   const response = await fetch('YOUR_API_ENDPOINT/player/position', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ x: position.x, y: position.y }),
-    //   });
-    //   const data = await response.json();
-    //   return data;
-    // } catch (error) {
-    //   console.error('Error sending position:', error);
-    // }
-
-    return position;
-  }, [width, height]);
-
-  /**
-   * Update other users' positions from API data (percentage values)
-   * Call this function when you receive position updates from the server
-   * @param {Array} apiUsers - Array of users with percentage-based positions
-   * Example: [{ id: '1', x: 25.5, y: 30.2, color: '#FF6B6B' }]
-   */
-  const updateOtherUsersPosition = useCallback((apiUsers) => {
-    if (!Array.isArray(apiUsers)) {
-      console.error('updateOtherUsersPosition: apiUsers must be an array');
-      return;
-    }
-
-    const updatedUsers = apiUsers.map(apiUser => {
-      const { x, y } = parsePositionFromAPI(
-        { x: apiUser.x, y: apiUser.y },
+    // Process new incoming tomato throws
+    incomingTomatoThrows.forEach((tomatoThrow) => {
+      // Convert percentage position to pixel position
+      const targetPosition = parsePositionFromAPI(
+        { x: tomatoThrow.targetX, y: tomatoThrow.targetY },
         width,
         height
       );
 
-      return {
-        ...apiUser,
-        x,
-        y,
-      };
+      // Find the thrower's current position
+      const thrower = players.find(p => p.userId === tomatoThrow.fromUserId);
+      let startX, startY;
+
+      if (thrower) {
+        // If thrower is another player
+        const throwerPosition = parsePositionFromAPI(
+          { x: thrower.x, y: thrower.y },
+          width,
+          height
+        );
+        startX = throwerPosition.x;
+        startY = throwerPosition.y;
+      } else if (tomatoThrow.fromUserId === myUserId) {
+        // If you threw it
+        startX = playerX.value;
+        startY = playerY.value;
+      } else {
+        // Thrower not found, skip this throw
+        clearTomatoThrow(tomatoThrow.id);
+        return;
+      }
+
+      // Add to active throws to be displayed
+      setActiveTomatoThrows((prev) => [
+        ...prev,
+        {
+          id: tomatoThrow.id,
+          startX,
+          startY,
+          targetX: targetPosition.x,
+          targetY: targetPosition.y,
+          fromUserId: tomatoThrow.fromUserId,
+          targetUserId: tomatoThrow.targetUserId,
+        }
+      ]);
+
+      // Clear from incoming list
+      clearTomatoThrow(tomatoThrow.id);
     });
-
-    setOtherUsers(updatedUsers);
-  }, [width, height]);
-
-  /**
-   * Move a specific user to a new position (using percentage values from API)
-   * @param {string} userId - The ID of the user to move
-   * @param {number} xPercent - X percentage (0-100)
-   * @param {number} yPercent - Y percentage (0-100)
-   */
-  const moveOtherUser = useCallback((userId, xPercent, yPercent) => {
-    const { x, y } = parsePositionFromAPI(
-      { x: xPercent, y: yPercent },
-      width,
-      height
-    );
-
-    setOtherUsers(prevUsers =>
-      prevUsers.map(user =>
-        user.id === userId ? { ...user, x, y } : user
-      )
-    );
-  }, [width, height]);
+  }, [incomingTomatoThrows, players, myUserId, width, height, playerX, playerY, clearTomatoThrow]);
 
   // Handle message send from popup
   const handleSendMessage = useCallback((message) => {
@@ -171,15 +176,25 @@ const Floor = () => {
       return;
     }
 
-    // Move player to clicked position
+    // Move player to clicked position locally
     moveToPosition(locationX, locationY);
 
-    // Send position to API with percentage values
-    await sendPositionToAPI(locationX, locationY);
-  }, [checkUserClick, moveToPosition, sendPositionToAPI]);
+    // Send position to server via WebSocket (convert to percentage)
+    const position = formatPositionForAPI(locationX, locationY, width, height);
+    movePlayer(position.x, position.y);
+  }, [checkUserClick, moveToPosition, movePlayer, width, height]);
 
   return (
     <>
+      {/* Connection Status Indicator */}
+      <View style={styles.connectionIndicator}>
+        <View style={[styles.statusDot, isConnected ? styles.connected : styles.disconnected]} />
+        <Text style={styles.statusText}>
+          {isConnected ? 'Connected' : 'Connecting...'}
+        </Text>
+        <Text style={styles.playerCount}>Players: {players.length}</Text>
+      </View>
+
       <Pressable style={styles.container} onPress={handlePress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
@@ -197,16 +212,19 @@ const Floor = () => {
               {/* Current player (you) */}
               <Player x={playerX} y={playerY} color="#00FF00" image={require('../assets/a4.png')} />
 
-              {/* Tomato above player's head (only when thrown) */}
-              {showTomato && tomatoTarget && (
+              {/* Active tomato throws (from any player to any player) */}
+              {activeTomatoThrows.map((tomatoThrow) => (
                 <Tomato
-                  startX={playerX}
-                  startY={playerY}
-                  targetX={tomatoTarget.x}
-                  targetY={tomatoTarget.y}
-                  onAnimationComplete={() => setShowTomato(false)}
+                  key={tomatoThrow.id}
+                  startX={tomatoThrow.startX}
+                  startY={tomatoThrow.startY}
+                  targetX={tomatoThrow.targetX}
+                  targetY={tomatoThrow.targetY}
+                  onAnimationComplete={() => {
+                    setActiveTomatoThrows((prev) => prev.filter(t => t.id !== tomatoThrow.id));
+                  }}
                 />
-              )}
+              ))}
 
               {/* Plane above player's head (only when thrown) */}
               {showPlane && planeTarget && (
@@ -237,8 +255,14 @@ const Floor = () => {
               style={styles.actionButton}
               onPress={() => {
                 console.log('Throwing tomato at user:', selectedUser.id);
-                setTomatoTarget({ x: selectedUser.x, y: selectedUser.y });
-                setShowTomato(true);
+
+                // Convert pixel position to percentage for API
+                const position = formatPositionForAPI(selectedUser.x, selectedUser.y, width, height);
+
+                // Emit throw event via WebSocket
+                throwTomato(selectedUser.id, position.x, position.y);
+
+                // Close bottom sheet
                 setIsBottomSheetVisible(false);
               }}
             >
@@ -282,6 +306,46 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
+  },
+  connectionIndicator: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1000,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  connected: {
+    backgroundColor: '#4CAF50',
+  },
+  disconnected: {
+    backgroundColor: '#F44336',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+  },
+  playerCount: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+    marginLeft: 4,
   },
   bottomSheetContent: {
     flex: 1,
