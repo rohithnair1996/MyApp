@@ -10,6 +10,7 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Button from '../components/Button';
 import LoginForm from '../components/LoginForm';
 import SignupForm from '../components/SignupForm';
@@ -37,6 +38,22 @@ const LandingScreen = ({ navigation }) => {
       }).start();
     }
   }, [loginVisible, signupVisible]);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
+          navigation.replace('VirtualRoom');
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigation]);
 
   const handleLoginPress = () => {
     setLoginVisible(true);
