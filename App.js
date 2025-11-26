@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './src/screens/HomeScreen';
 import VirtualRoom from './src/screens/VirtualRoom';
 import LandingScreen from './src/screens/LandingScreen';
+import SpacesScreen from './src/screens/SpacesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +17,15 @@ export default function App() {
           <Stack.Screen
             name="Landing"
             component={LandingScreen}
+            options={{
+              headerShown: false,
+              statusBarColor: '#000000',
+              statusBarTranslucent: true,
+            }}
+          />
+          <Stack.Screen
+            name="Spaces"
+            component={SpacesScreen}
             options={{
               headerShown: false,
               statusBarColor: '#000000',

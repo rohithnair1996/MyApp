@@ -45,7 +45,7 @@ const LandingScreen = ({ navigation }) => {
       try {
         const token = await AsyncStorage.getItem('authToken');
         if (token) {
-          navigation.replace('VirtualRoom');
+          navigation.replace('Spaces');
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
@@ -66,14 +66,14 @@ const LandingScreen = ({ navigation }) => {
   const handleLoginSuccess = () => {
     setLoginVisible(false);
     setTimeout(() => {
-      navigation.replace('VirtualRoom');
+      navigation.replace('Spaces');
     }, 300);
   };
 
   const handleSignupSuccess = () => {
     setSignupVisible(false);
     setTimeout(() => {
-      navigation.replace('VirtualRoom');
+      navigation.replace('Spaces');
     }, 300);
   };
 

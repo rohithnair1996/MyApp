@@ -1,24 +1,58 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { COLORS, ICON_SIZES } from '../constants/colors';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const Header = () => {
+const Header = ({ navigation }) => {
+  const handleBackPress = () => {
+    if (navigation) {
+      navigation.navigate('Spaces');
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.circleView}>
-        <Ionicons name="arrow-back" size={ICON_SIZES.LARGE} color={COLORS.WHITE} />
+      {/* Decorative Elements */}
+      <View style={styles.decorativePattern}>
+        {[...Array(12)].map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.particle,
+              {
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: Math.random() * 4 + 2,
+                height: Math.random() * 4 + 2,
+                opacity: Math.random() * 0.3 + 0.1,
+              },
+            ]}
+          />
+        ))}
       </View>
-      <View style={styles.rightContainer}>
-        <View style={styles.iconWithText}>
-          <FontAwesome5 name="user-friends" size={ICON_SIZES.MEDIUM} color={COLORS.ACCENT_CYAN} />
-          <Text style={styles.count}>5</Text>
+
+      {/* Content */}
+      <View style={styles.content}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <View style={styles.rightContainer}>
+          <View style={styles.statsContainer}>
+            <MaterialCommunityIcons name="account-group" size={20} color="#FFFFFF" />
+            <Text style={styles.statsText}>12</Text>
+          </View>
+
+          <TouchableOpacity style={styles.inviteButton}>
+            <Ionicons name="person-add" size={18} color="#000000" />
+            <Text style={styles.inviteText}>Invite</Text>
+          </TouchableOpacity>
         </View>
-        <View style={styles.iconWithText}>
-          <FontAwesome5 name="user-plus" size={ICON_SIZES.MEDIUM} color={COLORS.WHITE} />
-          <Text style={styles.text}>Invite</Text>
-        </View>
+      </View>
+
+      {/* Bottom Border Accent */}
+      <View style={styles.bottomAccent}>
+        <View style={styles.accentLine} />
       </View>
     </View>
   );
@@ -26,43 +60,104 @@ const Header = () => {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: '#000000',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 50,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: '#1A1A1A',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  decorativePattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+  },
+  particle: {
+    position: 'absolute',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1,
+    transform: [{ rotate: '45deg' }],
+  },
+  content: {
     flexDirection: 'row',
-    padding: 10,
-    backgroundColor: COLORS.PRIMARY_DARK,
     alignItems: 'center',
     justifyContent: 'space-between',
+    zIndex: 1,
   },
-  circleView: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.SECONDARY_DARK,
-    alignItems: 'center',
+  backButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#1A1A1A',
     justifyContent: 'center',
-  },
-  iconWithText: {
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.SECONDARY_DARK,
     alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    padding: 10,
-  },
-  count: {
-    color: COLORS.ACCENT_CYAN,
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  text: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: COLORS.WHITE,
+    borderWidth: 2,
+    borderColor: '#2A2A2A',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   rightContainer: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    gap: 12,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#2A2A2A',
+  },
+  statsText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  inviteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  inviteText: {
+    color: '#000000',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  bottomAccent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 20,
+    right: 20,
+  },
+  accentLine: {
+    height: 2,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.15,
+    width: '30%',
   },
 });
 

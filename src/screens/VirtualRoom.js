@@ -6,10 +6,10 @@ import VideoContainer from '../components/VideoContainer';
 import Floor from './Floor';
 
 
-export default function VirtualRoom() {
+export default function VirtualRoom({ navigation }) {
   return (
     <View style={styles.container}>
-      <Header />
+      <Header navigation={navigation} />
       <VideoContainer />
       <Floor />
     </View>
