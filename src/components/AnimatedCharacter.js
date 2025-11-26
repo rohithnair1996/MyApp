@@ -296,19 +296,19 @@ const AnimatedCharacter = ({ x, y, color, image }) => {
       <Path path={leftArmPath} color={color} style="stroke" strokeWidth={4} />
       <Path path={rightArmPath} color={color} style="stroke" strokeWidth={4} />
 
-      {/* Body */}
-      <RoundedRect
+      {/* Body but this one is showing hang issue*/}
+      {/* <RoundedRect
         x={bodyX}
         y={bodyY}
         width={BODY_WIDTH}
         height={BODY_HEIGHT}
         r={4}
         color={color}
-      />
+      /> */}
 
       {/* Avatar Image on Body */}
       {avatarImage && (
-        <Group clip={imageClip}>
+        // <Group clip={imageClip}>
           <Image
             image={avatarImage}
             x={imageX}
@@ -317,7 +317,7 @@ const AnimatedCharacter = ({ x, y, color, image }) => {
             height={imageHeight}
             fit="cover"
           />
-        </Group>
+        // </Group>
       )}
 
       {/* Legs */}
