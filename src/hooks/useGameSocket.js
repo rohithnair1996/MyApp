@@ -8,6 +8,7 @@ export const useGameSocket = () => {
   const [players, setPlayers] = useState([]);
   const [myUserId, setMyUserId] = useState(null);
   const [incomingTomatoThrows, setIncomingTomatoThrows] = useState([]);
+  const [incomingPlaneThrows, setIncomingPlaneThrows] = useState([]);
   const socketRef = useRef(null);
 
   // Connect to WebSocket server
@@ -99,6 +100,12 @@ export const useGameSocket = () => {
         setIncomingTomatoThrows((prev) => [...prev, { ...data, id: Date.now() + Math.random() }]);
       });
 
+      socketRef.current.on('planeThrown', (data) => {
+        console.log('Plane thrown:', data);
+        // Add to incoming plane throws list
+        setIncomingPlaneThrows((prev) => [...prev, { ...data, id: Date.now() + Math.random() }]);
+      });
+
       socketRef.current.on('error', (data) => {
         console.error('Server error:', data);
       });
@@ -141,9 +148,26 @@ export const useGameSocket = () => {
     }
   }, [isConnected]);
 
+  // Send plane throw to server
+  const throwPlane = useCallback((targetUserId, targetX, targetY) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('throwPlane', {
+        targetUserId,
+        targetX,
+        targetY,
+        timestamp: Date.now(),
+      });
+    }
+  }, [isConnected]);
+
   // Clear a processed tomato throw from the list
   const clearTomatoThrow = useCallback((tomatoId) => {
     setIncomingTomatoThrows((prev) => prev.filter(t => t.id !== tomatoId));
+  }, []);
+
+  // Clear a processed plane throw from the list
+  const clearPlaneThrow = useCallback((planeId) => {
+    setIncomingPlaneThrows((prev) => prev.filter(p => p.id !== planeId));
   }, []);
 
   // Connect on mount, disconnect on unmount
@@ -161,8 +185,11 @@ export const useGameSocket = () => {
     myUserId,
     movePlayer,
     throwTomato,
+    throwPlane,
     incomingTomatoThrows,
+    incomingPlaneThrows,
     clearTomatoThrow,
+    clearPlaneThrow,
     disconnect,
   };
 };

@@ -7,6 +7,7 @@ import VideoContainer from '../components/VideoContainer';
 import UserList from '../components/UserList';
 import Player from '../components/Player';
 import Tomato from '../components/Tomato';
+import Plane from '../components/Plane';
 import BottomSheet from '../components/BottomSheet';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { useGameSocket } from '../hooks/useGameSocket';
@@ -23,7 +24,7 @@ const Floor = ({ navigation }) => {
   const { width, height } = dimensions;
 
   // WebSocket connection for multiplayer
-  const { isConnected, players, myUserId, movePlayer, throwTomato, incomingTomatoThrows, clearTomatoThrow } = useGameSocket();
+  const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, incomingTomatoThrows, incomingPlaneThrows, clearTomatoThrow, clearPlaneThrow } = useGameSocket();
 
   // Player movement hook
   const { playerX, playerY, moveToPosition } = usePlayerMovement(width / 2, height / 2);
@@ -57,6 +58,9 @@ const Floor = ({ navigation }) => {
 
   // Incoming tomato throws (tomatoes thrown at you or others)
   const [activeTomatoThrows, setActiveTomatoThrows] = useState([]);
+
+  // Incoming plane throws (planes thrown at you or others)
+  const [activePlaneThrows, setActivePlaneThrows] = useState([]);
 
 
   // Check if touch point is within a user's rectangular body (memoized)
@@ -142,6 +146,61 @@ const Floor = ({ navigation }) => {
     });
   }, [incomingTomatoThrows, players, myUserId, width, height, playerX, playerY, clearTomatoThrow]);
 
+  // Handle incoming plane throws from WebSocket
+  useEffect(() => {
+    if (width === 0 || height === 0) return;
+
+    // Process new incoming plane throws
+    incomingPlaneThrows.forEach((planeThrow) => {
+      // Convert percentage position to pixel position
+      const targetPosition = parsePositionFromAPI(
+        { x: planeThrow.targetX, y: planeThrow.targetY },
+        width,
+        height
+      );
+
+      // Find the thrower's current position
+      const thrower = players.find(p => p.userId === planeThrow.fromUserId);
+      let startX, startY;
+
+      if (thrower) {
+        // If thrower is another player
+        const throwerPosition = parsePositionFromAPI(
+          { x: thrower.x, y: thrower.y },
+          width,
+          height
+        );
+        startX = throwerPosition.x;
+        startY = throwerPosition.y;
+      } else if (planeThrow.fromUserId === myUserId) {
+        // If you threw it
+        startX = playerX.value;
+        startY = playerY.value;
+      } else {
+        // Thrower not found, skip this throw
+        clearPlaneThrow(planeThrow.id);
+        return;
+      }
+
+      // Add to active throws to be displayed
+      setActivePlaneThrows((prev) => [
+        ...prev,
+        {
+          id: planeThrow.id,
+          startX,
+          startY,
+          targetX: targetPosition.x,
+          targetY: targetPosition.y,
+          fromUserId: planeThrow.fromUserId,
+          targetUserId: planeThrow.targetUserId,
+        }
+      ]);
+
+      // Clear from incoming list
+      clearPlaneThrow(planeThrow.id);
+    });
+  }, [incomingPlaneThrows, players, myUserId, width, height, playerX, playerY, clearPlaneThrow]);
+
   // Handle touch events (memoized)
   const handlePress = useCallback(async (event) => {
     const { locationX, locationY } = event.nativeEvent;
@@ -207,6 +266,20 @@ const Floor = ({ navigation }) => {
                   }}
                 />
               ))}
+
+              {/* Active plane throws (from any player to any player) */}
+              {activePlaneThrows.map((planeThrow) => (
+                <Plane
+                  key={planeThrow.id}
+                  startX={planeThrow.startX}
+                  startY={planeThrow.startY}
+                  targetX={planeThrow.targetX}
+                  targetY={planeThrow.targetY}
+                  onAnimationComplete={() => {
+                    setActivePlaneThrows((prev) => prev.filter(p => p.id !== planeThrow.id));
+                  }}
+                />
+              ))}
             </>
           )}
         </Canvas>
@@ -238,6 +311,24 @@ const Floor = ({ navigation }) => {
               }}
             >
               <Text style={styles.actionButtonText}>🍅 Throw a tomato</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonSpacing]}
+              onPress={() => {
+                console.log('Throwing plane at user:', selectedUser.id);
+
+                // Convert pixel position to percentage for API
+                const position = formatPositionForAPI(selectedUser.x, selectedUser.y, width, height);
+
+                // Emit throw event via WebSocket
+                throwPlane(selectedUser.id, position.x, position.y);
+
+                // Close bottom sheet
+                setIsBottomSheetVisible(false);
+              }}
+            >
+              <Text style={styles.actionButtonText}>✈️ Throw a plane</Text>
             </TouchableOpacity>
           </View>
         )}
