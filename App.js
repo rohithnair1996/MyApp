@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './src/screens/HomeScreen';
-import VirtualRoom from './src/screens/VirtualRoom';
+import Floor from './src/screens/Floor';
 import LandingScreen from './src/screens/LandingScreen';
 import SpacesScreen from './src/screens/SpacesScreen';
 
@@ -33,8 +33,8 @@ export default function App() {
             }}
           />
           <Stack.Screen
-            name="VirtualRoom"
-            component={VirtualRoom}
+            name="Floor"
+            component={Floor}
             options={{
               headerShown: false,
               statusBarColor: 'transparent',

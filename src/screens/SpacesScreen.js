@@ -56,7 +56,7 @@ const SpacesScreen = ({ navigation }) => {
 
   const handleRoomPress = (room) => {
     if (room.active) {
-      navigation.navigate('VirtualRoom');
+      navigation.navigate('Floor');
     }
   };
 

@@ -2,21 +2,23 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
 import { StyleSheet, Pressable, View, Text, TouchableOpacity } from 'react-native';
 import FloorBackground from '../components/FloorBackground';
+import Header from '../components/Header';
+import VideoContainer from '../components/VideoContainer';
 import UserList from '../components/UserList';
 import Player from '../components/Player';
 import Tomato from '../components/Tomato';
-import Plane from '../components/Plane';
 import BottomSheet from '../components/BottomSheet';
-import MessagePopup from '../components/MessagePopup';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { COLORS } from '../constants/colors';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
 
+
 const { BODY_WIDTH, BODY_HEIGHT } = CHARACTER_DIMENSIONS;
 
-const Floor = () => {
+
+const Floor = ({ navigation }) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { width, height } = dimensions;
 
@@ -53,20 +55,9 @@ const Floor = () => {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Tomato visibility and target state (for tomatoes you throw)
-  const [showTomato, setShowTomato] = useState(false);
-  const [tomatoTarget, setTomatoTarget] = useState(null);
-
   // Incoming tomato throws (tomatoes thrown at you or others)
   const [activeTomatoThrows, setActiveTomatoThrows] = useState([]);
 
-  // Plane visibility and target state
-  const [showPlane, setShowPlane] = useState(false);
-  const [planeTarget, setPlaneTarget] = useState(null);
-
-  // Message popup state
-  const [isMessagePopupVisible, setIsMessagePopupVisible] = useState(false);
-  const [messageRecipient, setMessageRecipient] = useState(null);
 
   // Check if touch point is within a user's rectangular body (memoized)
   const checkUserClick = useCallback((touchX, touchY) => {
@@ -151,16 +142,6 @@ const Floor = () => {
     });
   }, [incomingTomatoThrows, players, myUserId, width, height, playerX, playerY, clearTomatoThrow]);
 
-  // Handle message send from popup
-  const handleSendMessage = useCallback((message) => {
-    if (messageRecipient) {
-      console.log('Sending message to user:', messageRecipient.id, 'Message:', message);
-      setPlaneTarget({ x: messageRecipient.x, y: messageRecipient.y });
-      setShowPlane(true);
-      setMessageRecipient(null);
-    }
-  }, [messageRecipient]);
-
   // Handle touch events (memoized)
   const handlePress = useCallback(async (event) => {
     const { locationX, locationY } = event.nativeEvent;
@@ -194,7 +175,8 @@ const Floor = () => {
         </Text>
         <Text style={styles.playerCount}>Players: {players.length}</Text>
       </View>
-
+      <Header navigation={navigation} playersLength={players.length} isConnected={isConnected}/>
+      <VideoContainer />
       <Pressable style={styles.container} onPress={handlePress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
@@ -225,17 +207,6 @@ const Floor = () => {
                   }}
                 />
               ))}
-
-              {/* Plane above player's head (only when thrown) */}
-              {showPlane && planeTarget && (
-                <Plane
-                  startX={playerX}
-                  startY={playerY}
-                  targetX={planeTarget.x}
-                  targetY={planeTarget.y}
-                  onAnimationComplete={() => setShowPlane(false)}
-                />
-              )}
             </>
           )}
         </Canvas>
@@ -268,34 +239,9 @@ const Floor = () => {
             >
               <Text style={styles.actionButtonText}>🍅 Throw a tomato</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonSpacing]}
-              onPress={() => {
-                console.log('Opening message popup for user:', selectedUser.id);
-                setMessageRecipient(selectedUser);
-                setIsBottomSheetVisible(false);
-                // Use setTimeout to show popup after bottomsheet closes
-                setTimeout(() => {
-                  setIsMessagePopupVisible(true);
-                }, 300);
-              }}
-            >
-              <Text style={styles.actionButtonText}>✈️ Send message</Text>
-            </TouchableOpacity>
           </View>
         )}
       </BottomSheet>
-
-      {/* Message Popup */}
-      <MessagePopup
-        visible={isMessagePopupVisible}
-        onClose={() => {
-          setIsMessagePopupVisible(false);
-          setMessageRecipient(null);
-        }}
-        onSend={handleSendMessage}
-      />
     </>
   );
 };
@@ -306,46 +252,6 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
-  },
-  connectionIndicator: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 1000,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  connected: {
-    backgroundColor: '#4CAF50',
-  },
-  disconnected: {
-    backgroundColor: '#F44336',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-  },
-  playerCount: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#666',
-    marginLeft: 4,
   },
   bottomSheetContent: {
     flex: 1,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'r
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const Header = ({ navigation }) => {
+const Header = ({ navigation, playersLength, isConnected }) => {
   const handleBackPress = () => {
     if (navigation) {
       navigation.navigate('Spaces');
@@ -39,8 +39,8 @@ const Header = ({ navigation }) => {
 
         <View style={styles.rightContainer}>
           <View style={styles.statsContainer}>
-            <MaterialCommunityIcons name="account-group" size={20} color="#FFFFFF" />
-            <Text style={styles.statsText}>12</Text>
+            <MaterialCommunityIcons name="account-group" size={20} color={isConnected ? "#4CAF50" : "#F44336"} />
+            <Text style={styles.statsText}>{playersLength || 0}</Text>
           </View>
 
           <TouchableOpacity style={styles.inviteButton}>

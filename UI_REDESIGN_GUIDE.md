@@ -55,7 +55,7 @@ src/
 │   ├── LandingScreen.js    # New main landing screen
 │   ├── LoginScreen.js      # Old login screen (kept for fallback)
 │   ├── SignupScreen.js     # Old signup screen (kept for fallback)
-│   └── VirtualRoom.js      # Your game room
+│   └── Floor.js      # Your game room
 └── config/
     └── api.js              # API configuration
 ```
@@ -78,14 +78,14 @@ npm install @gorhom/bottom-sheet react-native-gesture-handler
    - Shows email/username and password fields
    - "Forgot Password?" link
    - "Sign In" button
-   - On success, navigates to VirtualRoom
+   - On success, navigates to Floor
 
 3. **Bottom Sheet Signup**: When "Create Account" is pressed:
    - A white bottom sheet slides up from the bottom
    - Shows username, password, and confirm password fields
    - Real-time password match indicator
    - "Create Account" button
-   - On success, navigates to VirtualRoom
+   - On success, navigates to Floor
 
 4. **Close Bottom Sheet**: Users can:
    - Swipe down to close
@@ -137,7 +137,7 @@ API Base URL from `.env`: `http://192.168.1.46:3000`
    - App opens to black Landing Screen
    - Press "Create Account" → Bottom sheet slides up
    - Fill in username, password, confirm password
-   - Press "Create Account" → Navigates to VirtualRoom
+   - Press "Create Account" → Navigates to Floor
    - Or press "Login" → Login bottom sheet appears
    - Fill in credentials and sign in
 
@@ -219,10 +219,10 @@ In `LandingScreen.js`:
 ## Old vs New
 
 **Old Flow**:
-Login Screen → Signup Screen → VirtualRoom
+Login Screen → Signup Screen → Floor
 
 **New Flow**:
-Landing Screen (with bottom sheets) → VirtualRoom
+Landing Screen (with bottom sheets) → Floor
 
 The old LoginScreen and SignupScreen are still available if you need them for reference or fallback.
 
