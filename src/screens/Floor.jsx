@@ -326,7 +326,7 @@ const Floor = ({ navigation }) => {
                 setIsMessagePopupVisible(true);
               }}
             >
-              <Text style={styles.actionButtonText}>✈️ Throw a plane</Text>
+              <Text style={styles.actionButtonText}>✈️ Send a Message</Text>
             </TouchableOpacity>
           </View>
         )}
