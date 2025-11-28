@@ -10,12 +10,12 @@ import {
   Platform,
 } from 'react-native';
 
-const MessagePopup = ({ visible, onClose, onSend }) => {
+const MessagePopup = ({ visible, onClose, onSend, targetUsername }) => {
   const [message, setMessage] = useState('');
 
   const handleSend = () => {
     if (message.trim()) {
-      onSend(message);
+      onSend(message.trim());
       setMessage('');
       onClose();
     }
@@ -40,8 +40,10 @@ const MessagePopup = ({ visible, onClose, onSend }) => {
           style={styles.centeredView}
         >
           <View style={styles.popup}>
-            <Text style={styles.title}>Send a Message</Text>
-            <Text style={styles.subtitle}>Enter your message below:</Text>
+            <Text style={styles.title}>Send a message</Text>
+            <Text style={styles.subtitle}>
+              to {targetUsername || 'player'}
+            </Text>
 
             <TextInput
               style={styles.input}

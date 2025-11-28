@@ -9,6 +9,7 @@ import Player from '../components/Player';
 import Tomato from '../components/Tomato';
 import Plane from '../components/Plane';
 import BottomSheet from '../components/BottomSheet';
+import MessagePopup from '../components/MessagePopup';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
@@ -55,6 +56,9 @@ const Floor = ({ navigation }) => {
   // Bottom sheet state
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // Message popup state
+  const [isMessagePopupVisible, setIsMessagePopupVisible] = useState(false);
 
   // Incoming tomato throws (tomatoes thrown at you or others)
   const [activeTomatoThrows, setActiveTomatoThrows] = useState([]);
@@ -316,16 +320,10 @@ const Floor = ({ navigation }) => {
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSpacing]}
               onPress={() => {
-                console.log('Throwing plane at user:', selectedUser.id);
-
-                // Convert pixel position to percentage for API
-                const position = formatPositionForAPI(selectedUser.x, selectedUser.y, width, height);
-
-                // Emit throw event via WebSocket
-                throwPlane(selectedUser.id, position.x, position.y);
-
-                // Close bottom sheet
+                console.log('Opening message popup for user:', selectedUser.id);
+                // Close bottom sheet and open message popup
                 setIsBottomSheetVisible(false);
+                setIsMessagePopupVisible(true);
               }}
             >
               <Text style={styles.actionButtonText}>✈️ Throw a plane</Text>
@@ -333,6 +331,23 @@ const Floor = ({ navigation }) => {
           </View>
         )}
       </BottomSheet>
+
+      {/* Message Popup for Plane Throw */}
+      <MessagePopup
+        visible={isMessagePopupVisible}
+        onClose={() => setIsMessagePopupVisible(false)}
+        targetUsername={selectedUser?.username}
+        onSend={(message) => {
+          // use this messege with another socket io event to that user only
+          if (selectedUser) {
+            // Convert pixel position to percentage for API
+            const position = formatPositionForAPI(selectedUser.x, selectedUser.y, width, height);
+
+            // Emit throw event via WebSocket with message
+            throwPlane(selectedUser.id, position.x, position.y);
+          }
+        }}
+      />
     </>
   );
 };
