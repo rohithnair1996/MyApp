@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
-import { StyleSheet, Pressable, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Pressable, View, Text, TouchableOpacity, Alert, Vibration } from 'react-native';
 import FloorBackground from '../components/FloorBackground';
 import Header from '../components/Header';
 import VideoContainer from '../components/VideoContainer';
@@ -212,6 +212,10 @@ const Floor = ({ navigation }) => {
       // Find the sender's username
       const sender = players.find(p => p.userId === incomingMessage.fromUserId);
       const senderName = sender ? sender.username : 'Someone';
+
+      // Vibrate with pattern: [wait, vibrate, wait, vibrate, ...]
+      // Pattern: vibrate for 200ms, pause 100ms, repeat 3 times (~1 second total)
+      Vibration.vibrate([0, 200, 100, 200, 100, 200]);
 
       // Show alert with the message
       Alert.alert(
