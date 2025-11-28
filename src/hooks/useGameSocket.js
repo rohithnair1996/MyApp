@@ -9,6 +9,7 @@ export const useGameSocket = () => {
   const [myUserId, setMyUserId] = useState(null);
   const [incomingTomatoThrows, setIncomingTomatoThrows] = useState([]);
   const [incomingPlaneThrows, setIncomingPlaneThrows] = useState([]);
+  const [incomingMessages, setIncomingMessages] = useState([]);
   const socketRef = useRef(null);
 
   // Connect to WebSocket server
@@ -106,6 +107,12 @@ export const useGameSocket = () => {
         setIncomingPlaneThrows((prev) => [...prev, { ...data, id: Date.now() + Math.random() }]);
       });
 
+      socketRef.current.on('messageReceived', (data) => {
+        console.log('Message received:', data);
+        // Add to incoming messages list
+        setIncomingMessages((prev) => [...prev, { ...data, id: Date.now() + Math.random() }]);
+      });
+
       socketRef.current.on('error', (data) => {
         console.error('Server error:', data);
       });
@@ -160,6 +167,17 @@ export const useGameSocket = () => {
     }
   }, [isConnected]);
 
+  // Send message to server
+  const sendMessage = useCallback((targetUserId, message) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('sendMessage', {
+        targetUserId,
+        message,
+        timestamp: Date.now(),
+      });
+    }
+  }, [isConnected]);
+
   // Clear a processed tomato throw from the list
   const clearTomatoThrow = useCallback((tomatoId) => {
     setIncomingTomatoThrows((prev) => prev.filter(t => t.id !== tomatoId));
@@ -168,6 +186,11 @@ export const useGameSocket = () => {
   // Clear a processed plane throw from the list
   const clearPlaneThrow = useCallback((planeId) => {
     setIncomingPlaneThrows((prev) => prev.filter(p => p.id !== planeId));
+  }, []);
+
+  // Clear a processed message from the list
+  const clearMessage = useCallback((messageId) => {
+    setIncomingMessages((prev) => prev.filter(m => m.id !== messageId));
   }, []);
 
   // Connect on mount, disconnect on unmount
@@ -186,10 +209,13 @@ export const useGameSocket = () => {
     movePlayer,
     throwTomato,
     throwPlane,
+    sendMessage,
     incomingTomatoThrows,
     incomingPlaneThrows,
+    incomingMessages,
     clearTomatoThrow,
     clearPlaneThrow,
+    clearMessage,
     disconnect,
   };
 };

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
-import { StyleSheet, Pressable, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Pressable, View, Text, TouchableOpacity, Alert } from 'react-native';
 import FloorBackground from '../components/FloorBackground';
 import Header from '../components/Header';
 import VideoContainer from '../components/VideoContainer';
@@ -25,7 +25,7 @@ const Floor = ({ navigation }) => {
   const { width, height } = dimensions;
 
   // WebSocket connection for multiplayer
-  const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, incomingTomatoThrows, incomingPlaneThrows, clearTomatoThrow, clearPlaneThrow } = useGameSocket();
+  const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, clearTomatoThrow, clearPlaneThrow, clearMessage } = useGameSocket();
 
   // Player movement hook
   const { playerX, playerY, moveToPosition } = usePlayerMovement(width / 2, height / 2);
@@ -205,6 +205,26 @@ const Floor = ({ navigation }) => {
     });
   }, [incomingPlaneThrows, players, myUserId, width, height, playerX, playerY, clearPlaneThrow]);
 
+  // Handle incoming messages from WebSocket
+  useEffect(() => {
+    // Process new incoming messages
+    incomingMessages.forEach((incomingMessage) => {
+      // Find the sender's username
+      const sender = players.find(p => p.userId === incomingMessage.fromUserId);
+      const senderName = sender ? sender.username : 'Someone';
+
+      // Show alert with the message
+      Alert.alert(
+        `Message from ${senderName}`,
+        incomingMessage.message,
+        [{ text: 'OK' }]
+      );
+
+      // Clear from incoming list
+      clearMessage(incomingMessage.id);
+    });
+  }, [incomingMessages, players, clearMessage]);
+
   // Handle touch events (memoized)
   const handlePress = useCallback(async (event) => {
     const { locationX, locationY } = event.nativeEvent;
@@ -238,7 +258,7 @@ const Floor = ({ navigation }) => {
         </Text>
         <Text style={styles.playerCount}>Players: {players.length}</Text>
       </View>
-      <Header navigation={navigation} playersLength={players.length} isConnected={isConnected}/>
+      <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
       <VideoContainer />
       <Pressable style={styles.container} onPress={handlePress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
@@ -332,19 +352,21 @@ const Floor = ({ navigation }) => {
         )}
       </BottomSheet>
 
-      {/* Message Popup for Plane Throw */}
+      {/* Message Popup */}
       <MessagePopup
         visible={isMessagePopupVisible}
         onClose={() => setIsMessagePopupVisible(false)}
         targetUsername={selectedUser?.username}
         onSend={(message) => {
-          // use this messege with another socket io event to that user only
           if (selectedUser) {
             // Convert pixel position to percentage for API
             const position = formatPositionForAPI(selectedUser.x, selectedUser.y, width, height);
 
             // Emit throw event via WebSocket with message
             throwPlane(selectedUser.id, position.x, position.y);
+            console.log('Sending message to user:', selectedUser.id, 'message:', message);
+            // Send message to the target user via WebSocket
+            sendMessage(selectedUser.id, message);
           }
         }}
       />
