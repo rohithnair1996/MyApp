@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
-import { StyleSheet, Pressable, View, Text, TouchableOpacity, Alert, Vibration } from 'react-native';
+import { StyleSheet, Pressable, View, Text, TouchableOpacity, Vibration } from 'react-native';
+import { showToast } from '../components/ToastStack';
 import FloorBackground from '../components/FloorBackground';
 import Header from '../components/Header';
 import VideoContainer from '../components/VideoContainer';
@@ -217,12 +218,12 @@ const Floor = ({ navigation }) => {
       // Pattern: vibrate for 200ms, pause 100ms, repeat 3 times (~1 second total)
       Vibration.vibrate([0, 200, 100, 200, 100, 200]);
 
-      // Show alert with the message
-      Alert.alert(
-        `Message from ${senderName}`,
-        incomingMessage.message,
-        [{ text: 'OK' }]
-      );
+      // Show toast with the message
+      showToast({
+        type: 'info',
+        text1: `Message from ${senderName}`,
+        text2: incomingMessage.message,
+      });
 
       // Clear from incoming list
       clearMessage(incomingMessage.id);
@@ -240,12 +241,12 @@ const Floor = ({ navigation }) => {
       // Vibrate with pattern: single short vibration
       Vibration.vibrate([0, 200, 100, 200, 100, 200]);
 
-      // Show alert with the poke notification
-      Alert.alert(
-        `👉 Poke!`,
-        `${senderName} poked you!`,
-        [{ text: 'OK' }]
-      );
+      // Show toast with the poke notification
+      showToast({
+        type: 'success',
+        text1: '👉 Poke!',
+        text2: `${senderName} poked you!`,
+      });
 
       // Clear from incoming list
       clearPoke(incomingPoke.id);
@@ -288,14 +289,6 @@ const Floor = ({ navigation }) => {
 
   return (
     <>
-      {/* Connection Status Indicator */}
-      <View style={styles.connectionIndicator}>
-        <View style={[styles.statusDot, isConnected ? styles.connected : styles.disconnected]} />
-        <Text style={styles.statusText}>
-          {isConnected ? 'Connected' : 'Connecting...'}
-        </Text>
-        <Text style={styles.playerCount}>Players: {players.length}</Text>
-      </View>
       <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
       <VideoContainer />
       <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} onLayout={handleLayout}>
