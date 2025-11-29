@@ -25,7 +25,7 @@ const Floor = ({ navigation }) => {
   const { width, height } = dimensions;
 
   // WebSocket connection for multiplayer
-  const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, clearTomatoThrow, clearPlaneThrow, clearMessage } = useGameSocket();
+  const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, pokeUser, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, incomingPokes, clearTomatoThrow, clearPlaneThrow, clearMessage, clearPoke } = useGameSocket();
 
   // Player movement hook
   const { playerX, playerY, moveToPosition } = usePlayerMovement(width / 2, height / 2);
@@ -229,6 +229,40 @@ const Floor = ({ navigation }) => {
     });
   }, [incomingMessages, players, clearMessage]);
 
+  // Handle incoming pokes from WebSocket
+  useEffect(() => {
+    // Process new incoming pokes
+    incomingPokes.forEach((incomingPoke) => {
+      // Find the sender's username
+      const sender = players.find(p => p.userId === incomingPoke.fromUserId);
+      const senderName = sender ? sender.username : 'Someone';
+
+      // Vibrate with pattern: single short vibration
+      Vibration.vibrate([0, 200, 100, 200, 100, 200]);
+
+      // Show alert with the poke notification
+      Alert.alert(
+        `👉 Poke!`,
+        `${senderName} poked you!`,
+        [{ text: 'OK' }]
+      );
+
+      // Clear from incoming list
+      clearPoke(incomingPoke.id);
+    });
+  }, [incomingPokes, players, clearPoke]);
+
+  // Handle long press events (memoized)
+  const handleLongPress = useCallback((event) => {
+    const { locationX, locationY } = event.nativeEvent;
+
+    // Check if user was long pressed
+    const longPressedUser = checkUserClick(locationX, locationY);
+    if (longPressedUser) {
+      console.log('Username:', longPressedUser.username);
+    }
+  }, [checkUserClick]);
+
   // Handle touch events (memoized)
   const handlePress = useCallback(async (event) => {
     const { locationX, locationY } = event.nativeEvent;
@@ -264,7 +298,7 @@ const Floor = ({ navigation }) => {
       </View>
       <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
       <VideoContainer />
-      <Pressable style={styles.container} onPress={handlePress} onLayout={handleLayout}>
+      <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
             <>
@@ -325,6 +359,19 @@ const Floor = ({ navigation }) => {
 
             <TouchableOpacity
               style={styles.actionButton}
+              onPress={() => {
+                console.log('Poking user:', selectedUser.username);
+                // Send poke to the target user via WebSocket
+                pokeUser(selectedUser.id);
+                // Close bottom sheet
+                setIsBottomSheetVisible(false);
+              }}
+            >
+              <Text style={styles.actionButtonText}>👉 Poke</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonSpacing]}
               onPress={() => {
                 console.log('Throwing tomato at user:', selectedUser.id);
 
