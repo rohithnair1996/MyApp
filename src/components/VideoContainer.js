@@ -56,6 +56,8 @@ const styles = StyleSheet.create({
   videoContainer: {
     width: '100%',
     overflow: 'hidden',
+    padding: 20,
+    backgroundColor: 'yellow'
   },
 });
 

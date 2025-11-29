@@ -2,6 +2,7 @@ import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import ToastStack from './src/components/ToastStack';
 import HomeScreen from './src/screens/HomeScreen';
 import Floor from './src/screens/Floor';
 import LandingScreen from './src/screens/LandingScreen';
@@ -47,6 +48,7 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
+      <ToastStack />
     </SafeAreaProvider>
   );
 }
