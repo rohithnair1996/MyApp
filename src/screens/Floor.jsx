@@ -1,18 +1,15 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
 import { StyleSheet, Pressable, View, Text, TouchableOpacity, Vibration } from 'react-native';
 import { showToast } from '../components/ToastStack';
 import FloorBackground from '../components/FloorBackground';
 import Header from '../components/Header';
 import VideoContainer from '../components/VideoContainer';
-import UserList from '../components/UserList';
-import Player from '../components/Player';
 import Tomato from '../components/Tomato';
 import Plane from '../components/Plane';
-import {StaticCharacter} from '../components/character/StaticCharacter';
-import {AnimatedCharacter} from '../components/character/AnimatedCharacter';
 import { SimpleCharacter } from '../components/character/SimpleCharacter';
 import { useWalker } from '../components/character/useWalker';
+import RemotePlayer from '../components/RemotePlayer';
 
 
 import BottomSheet from '../components/BottomSheet';
@@ -20,7 +17,6 @@ import MessagePopup from '../components/MessagePopup';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
-import { COLORS } from '../constants/colors';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
 
 
@@ -37,29 +33,6 @@ const Floor = ({ navigation }) => {
 
   // Player movement hook
   const { playerX, playerY, moveToPosition } = usePlayerMovement(width / 2, height / 2);
-
-  // Convert server players (percentage) to pixel positions for display
-  const otherUsers = useMemo(() => {
-    if (width === 0 || height === 0) return [];
-
-    return players
-      .filter(player => player.userId !== myUserId) // Don't show yourself as another player
-      .map(player => {
-        const { x, y } = parsePositionFromAPI(
-          { x: player.x, y: player.y },
-          width,
-          height
-        );
-        return {
-          id: player.userId,
-          x,
-          y,
-          color: COLORS.USER_RED, // You can randomize or assign colors based on userId
-          image: require('../assets/a1.png'), // You can assign different avatars
-          username: player.username,
-        };
-      });
-  }, [players, myUserId, width, height]);
 
   // Bottom sheet state
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
@@ -82,20 +55,34 @@ const Floor = ({ navigation }) => {
       return null;
     }
 
-    for (const user of otherUsers) {
+    for (const player of players) {
+      if (player.userId === myUserId) continue; // Skip self
+
+      // Parse player position from server
+      const playerPos = parsePositionFromAPI(
+        { x: player.x, y: player.y },
+        width,
+        height
+      );
+
       // Calculate user's rectangular bounds
-      const left = user.x - BODY_WIDTH / 2;
-      const right = user.x + BODY_WIDTH / 2;
-      const top = user.y - BODY_HEIGHT / 2;
-      const bottom = user.y + BODY_HEIGHT / 2;
+      const left = playerPos.x - BODY_WIDTH / 2;
+      const right = playerPos.x + BODY_WIDTH / 2;
+      const top = playerPos.y - BODY_HEIGHT / 2;
+      const bottom = playerPos.y + BODY_HEIGHT / 2;
 
       // Check if touch point is within the rectangle
       if (touchX >= left && touchX <= right && touchY >= top && touchY <= bottom) {
-        return user;
+        return {
+          id: player.userId,
+          username: player.username,
+          x: playerPos.x,
+          y: playerPos.y,
+        };
       }
     }
     return null;
-  }, [otherUsers]);
+  }, [players, myUserId, width, height]);
 
   // Handle layout changes to measure actual component dimensions (memoized)
   const handleLayout = useCallback((event) => {
@@ -310,13 +297,23 @@ const Floor = ({ navigation }) => {
                 imagePath={require('../images/floor3.png')}
               />
 
-              <SimpleCharacter x={x} y={y} walkCycle={walkCycle} />
+              <SimpleCharacter x={x} y={y} walkCycle={walkCycle} image={require('../assets/a4.png')}/>
 
               {/* Other users */}
-              <UserList users={otherUsers} />
+              {players
+                .filter(player => player.userId !== myUserId)
+                .map(player => (
+                  <RemotePlayer
+                    key={player.userId}
+                    player={player}
+                    width={width}
+                    height={height}
+                    image={require('../assets/a1.png')}
+                  />
+                ))}
 
               {/* Current player (you) */}
-              <Player x={playerX} y={playerY} image={require('../assets/a4.png')} />
+              {/* <SimpleCharacter x={playerX} y={playerY} image={require('../assets/a4.png')} /> */}
 
               {/* Active tomato throws (from any player to any player) */}
               {activeTomatoThrows.map((tomatoThrow) => (

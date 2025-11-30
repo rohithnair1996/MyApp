@@ -4,21 +4,27 @@ import {
   Path,
   RoundedRect,
   Skia,
+  Image,
+  useImage,
 } from '@shopify/react-native-skia';
 import { useDerivedValue } from 'react-native-reanimated';
 
 type Props = {
   x: any;          // SharedValue<number>
   y: any;          // SharedValue<number>
-  walkCycle: any;  // SharedValue<number> (0..1..0..1)
+  walkCycle?: any; // Optional SharedValue<number> (0..1..0..1)
+  image?: any;     // Optional image source
 };
 
-const BODY_WIDTH = 30;
-const BODY_HEIGHT = 40;
+const BODY_WIDTH = 40;
+const BODY_HEIGHT = 50;
 const LEG_LENGTH = 25;
 const ARM_LENGTH = 20;
+const PADDING = 5;
 
-export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle }) => {
+export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle, image }) => {
+  const avatarImage = useImage(image);
+
   // Body top-left
   const bodyX = useDerivedValue(() => {
     'worklet';
@@ -33,6 +39,7 @@ export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle }) => {
   // Convert walkCycle (0..1..0) to swing (-1..1..-1)
   const swing = useDerivedValue(() => {
     'worklet';
+    if (!walkCycle) return 0;
     const t = walkCycle.value;  // 0..1..0
     return (t * 2) - 1;         // -1..1..-1
   });
@@ -120,14 +127,23 @@ export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle }) => {
       <Path path={rightArmPath} color="black" style="stroke" strokeWidth={3} />
 
       {/* Body */}
-      <RoundedRect
-        x={bodyX}
-        y={bodyY}
-        width={BODY_WIDTH}
-        height={BODY_HEIGHT}
-        r={4}
-        color="#3498db"
-      />
+      {image && avatarImage ?
+        <Image
+          image={avatarImage}
+          x={bodyX}
+          y={bodyY}
+          width={BODY_WIDTH}
+          height={BODY_HEIGHT}
+          fit="cover"
+        /> :
+        <RoundedRect
+          x={bodyX}
+          y={bodyY}
+          width={BODY_WIDTH}
+          height={BODY_HEIGHT}
+          r={4}
+          color="#3498db"
+        />}
 
       {/* Legs */}
       <Path path={leftLegPath} color="black" style="stroke" strokeWidth={3} />
