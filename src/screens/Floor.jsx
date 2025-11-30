@@ -10,8 +10,6 @@ import Plane from '../components/Plane';
 import { SimpleCharacter } from '../components/character/SimpleCharacter';
 import { useWalker } from '../components/character/useWalker';
 import RemotePlayer from '../components/RemotePlayer';
-import TileFloorBackground from "../components/TileFloorBackground";
-
 
 import BottomSheet from '../components/BottomSheet';
 import MessagePopup from '../components/MessagePopup';
@@ -286,14 +284,11 @@ const Floor = ({ navigation }) => {
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
             <>
-              {/* Floor background image */}
               <FloorBackground
                 width={width}
                 height={height}
                 imagePath={require('../images/floor3.png')}
               />
-              {/* <TileFloorBackground width={width} height={height} /> */}
-
               <SimpleCharacter x={x} y={y} walkCycle={walkCycle} image={require('../assets/a4.png')}/>
 
               {/* Other users */}
@@ -310,7 +305,6 @@ const Floor = ({ navigation }) => {
                 ))}
 
 
-              {/* Active tomato throws (from any player to any player) */}
               {activeTomatoThrows.map((tomatoThrow) => (
                 <Tomato
                   key={tomatoThrow.id}
@@ -324,7 +318,6 @@ const Floor = ({ navigation }) => {
                 />
               ))}
 
-              {/* Active plane throws (from any player to any player) */}
               {activePlaneThrows.map((planeThrow) => (
                 <Plane
                   key={planeThrow.id}
@@ -342,7 +335,6 @@ const Floor = ({ navigation }) => {
         </Canvas>
       </Pressable>
 
-      {/* Bottom Sheet for Player Actions */}
       <BottomSheet
         visible={isBottomSheetVisible}
         onClose={() => setIsBottomSheetVisible(false)}
@@ -356,9 +348,7 @@ const Floor = ({ navigation }) => {
               style={styles.actionButton}
               onPress={() => {
                 console.log('Poking user:', selectedUser.username);
-                // Send poke to the target user via WebSocket
                 pokeUser(selectedUser.id);
-                // Close bottom sheet
                 setIsBottomSheetVisible(false);
               }}
             >
@@ -370,13 +360,10 @@ const Floor = ({ navigation }) => {
               onPress={() => {
                 console.log('Throwing tomato at user:', selectedUser.id);
 
-                // Convert pixel position to percentage for API
                 const position = formatPositionForAPI(selectedUser.x, selectedUser.y, width, height);
 
-                // Emit throw event via WebSocket
                 throwTomato(selectedUser.id, position.x, position.y);
 
-                // Close bottom sheet
                 setIsBottomSheetVisible(false);
               }}
             >
@@ -387,7 +374,6 @@ const Floor = ({ navigation }) => {
               style={[styles.actionButton, styles.actionButtonSpacing]}
               onPress={() => {
                 console.log('Opening message popup for user:', selectedUser.id);
-                // Close bottom sheet and open message popup
                 setIsBottomSheetVisible(false);
                 setIsMessagePopupVisible(true);
               }}
