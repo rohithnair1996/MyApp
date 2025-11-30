@@ -10,11 +10,11 @@ import Plane from '../components/Plane';
 import { SimpleCharacter } from '../components/character/SimpleCharacter';
 import { useWalker } from '../components/character/useWalker';
 import RemotePlayer from '../components/RemotePlayer';
+import TileFloorBackground from "../components/TileFloorBackground";
 
 
 import BottomSheet from '../components/BottomSheet';
 import MessagePopup from '../components/MessagePopup';
-import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
@@ -30,9 +30,6 @@ const Floor = ({ navigation }) => {
 
   // WebSocket connection for multiplayer
   const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, pokeUser, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, incomingPokes, clearTomatoThrow, clearPlaneThrow, clearMessage, clearPoke } = useGameSocket();
-
-  // Player movement hook
-  const { playerX, playerY, moveToPosition } = usePlayerMovement(width / 2, height / 2);
 
   // Bottom sheet state
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
@@ -118,8 +115,8 @@ const Floor = ({ navigation }) => {
         startY = throwerPosition.y;
       } else if (tomatoThrow.fromUserId === myUserId) {
         // If you threw it
-        startX = playerX.value;
-        startY = playerY.value;
+        startX = x.value;
+        startY = y.value;
       } else {
         // Thrower not found, skip this throw
         clearTomatoThrow(tomatoThrow.id);
@@ -143,7 +140,7 @@ const Floor = ({ navigation }) => {
       // Clear from incoming list
       clearTomatoThrow(tomatoThrow.id);
     });
-  }, [incomingTomatoThrows, players, myUserId, width, height, playerX, playerY, clearTomatoThrow]);
+  }, [incomingTomatoThrows, players, myUserId, width, height, x, y, clearTomatoThrow]);
 
   // Handle incoming plane throws from WebSocket
   useEffect(() => {
@@ -173,8 +170,8 @@ const Floor = ({ navigation }) => {
         startY = throwerPosition.y;
       } else if (planeThrow.fromUserId === myUserId) {
         // If you threw it
-        startX = playerX.value;
-        startY = playerY.value;
+        startX = x.value;
+        startY = y.value;
       } else {
         // Thrower not found, skip this throw
         clearPlaneThrow(planeThrow.id);
@@ -198,7 +195,7 @@ const Floor = ({ navigation }) => {
       // Clear from incoming list
       clearPlaneThrow(planeThrow.id);
     });
-  }, [incomingPlaneThrows, players, myUserId, width, height, playerX, playerY, clearPlaneThrow]);
+  }, [incomingPlaneThrows, players, myUserId, width, height, x, y, clearPlaneThrow]);
 
   // Handle incoming messages from WebSocket
   useEffect(() => {
@@ -275,12 +272,11 @@ const Floor = ({ navigation }) => {
 
     // Move player to clicked position locally
     walkTo(locationX,locationY);
-    moveToPosition(locationX, locationY);
 
     // Send position to server via WebSocket (convert to percentage)
     const position = formatPositionForAPI(locationX, locationY, width, height);
     movePlayer(position.x, position.y);
-  }, [checkUserClick, moveToPosition, movePlayer, width, height]);
+  }, [checkUserClick, movePlayer, width, height]);
 
   return (
     <>
@@ -296,6 +292,7 @@ const Floor = ({ navigation }) => {
                 height={height}
                 imagePath={require('../images/floor3.png')}
               />
+              {/* <TileFloorBackground width={width} height={height} /> */}
 
               <SimpleCharacter x={x} y={y} walkCycle={walkCycle} image={require('../assets/a4.png')}/>
 
@@ -312,8 +309,6 @@ const Floor = ({ navigation }) => {
                   />
                 ))}
 
-              {/* Current player (you) */}
-              {/* <SimpleCharacter x={playerX} y={playerY} image={require('../assets/a4.png')} /> */}
 
               {/* Active tomato throws (from any player to any player) */}
               {activeTomatoThrows.map((tomatoThrow) => (

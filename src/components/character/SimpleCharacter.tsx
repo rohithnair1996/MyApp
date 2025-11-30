@@ -40,8 +40,8 @@ export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle, image }) => 
   const swing = useDerivedValue(() => {
     'worklet';
     if (!walkCycle) return 0;
-    const t = walkCycle.value;  // 0..1..0
-    return (t * 2) - 1;         // -1..1..-1
+    return walkCycle.value;  // 0..1..0
+    // return (t * 2) - 1;         // -1..1..-1
   });
 
   // Legs: two curved paths using swing
@@ -52,11 +52,11 @@ export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle, image }) => 
     const hipX = x.value - BODY_WIDTH / 4;
     const hipY = y.value + BODY_HEIGHT / 2;
 
-    const footX = hipX - 4 * swing.value; // move left/right with swing
-    const footY = hipY + LEG_LENGTH;
+    const footX = hipX; // move left/right with swing
+    const footY = hipY + LEG_LENGTH - 5 * swing.value;
 
     path.moveTo(hipX, hipY);
-    path.quadTo(hipX - 2, hipY + LEG_LENGTH / 2, footX, footY);
+    path.quadTo(hipX - 2, hipY + 50 + LEG_LENGTH, footX - 20, footY + 10);
 
     return path;
   });
@@ -68,11 +68,11 @@ export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle, image }) => 
     const hipX = x.value + BODY_WIDTH / 4;
     const hipY = y.value + BODY_HEIGHT / 2;
 
-    const footX = hipX + 4 * swing.value; // opposite direction if you want
-    const footY = hipY + LEG_LENGTH;
+    const footX = hipX; // opposite direction if you want
+    const footY = hipY + LEG_LENGTH - 5 * swing.value;
 
     path.moveTo(hipX, hipY);
-    path.quadTo(hipX + 2, hipY + LEG_LENGTH / 2, footX, footY);
+    path.quadTo(hipX + 2, hipY + 50 + LEG_LENGTH, footX + 20, footY + 10);
 
     return path;
   });
@@ -90,10 +90,10 @@ export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle, image }) => 
 
     path.moveTo(shoulderX, shoulderY);
     path.quadTo(
-      shoulderX - ARM_LENGTH / 2,
-      shoulderY,
+      shoulderX - 10 - ARM_LENGTH / 2,
+      shoulderY - 5,
       handX,
-      handY
+      handY + 15
     );
 
     return path;
@@ -107,14 +107,14 @@ export const SimpleCharacter: React.FC<Props> = ({ x, y, walkCycle, image }) => 
     const shoulderY = y.value - BODY_HEIGHT / 4;
 
     const handX = shoulderX + ARM_LENGTH * 0.6;
-    const handY = shoulderY + ARM_LENGTH * 0.6 - 4 * swing.value;
+    const handY = shoulderY + ARM_LENGTH * 0.6 + 4 * swing.value;
 
     path.moveTo(shoulderX, shoulderY);
     path.quadTo(
-      shoulderX + ARM_LENGTH / 2,
-      shoulderY,
+      shoulderX + 10 + ARM_LENGTH / 2,
+      shoulderY - 5,
       handX,
-      handY
+      handY + 15
     );
 
     return path;
