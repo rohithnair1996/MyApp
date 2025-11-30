@@ -9,6 +9,12 @@ import UserList from '../components/UserList';
 import Player from '../components/Player';
 import Tomato from '../components/Tomato';
 import Plane from '../components/Plane';
+import {StaticCharacter} from '../components/character/StaticCharacter';
+import {AnimatedCharacter} from '../components/character/AnimatedCharacter';
+import { SimpleCharacter } from '../components/character/SimpleCharacter';
+import { useWalker } from '../components/character/useWalker';
+
+
 import BottomSheet from '../components/BottomSheet';
 import MessagePopup from '../components/MessagePopup';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
@@ -24,6 +30,7 @@ const { BODY_WIDTH, BODY_HEIGHT } = CHARACTER_DIMENSIONS;
 const Floor = ({ navigation }) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { width, height } = dimensions;
+  const { x, y, walkCycle, walkTo } = useWalker(50, 100);
 
   // WebSocket connection for multiplayer
   const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, pokeUser, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, incomingPokes, clearTomatoThrow, clearPlaneThrow, clearMessage, clearPoke } = useGameSocket();
@@ -280,6 +287,7 @@ const Floor = ({ navigation }) => {
     }
 
     // Move player to clicked position locally
+    walkTo(locationX,locationY);
     moveToPosition(locationX, locationY);
 
     // Send position to server via WebSocket (convert to percentage)
@@ -302,11 +310,13 @@ const Floor = ({ navigation }) => {
                 imagePath={require('../images/floor3.png')}
               />
 
+              <SimpleCharacter x={x} y={y} walkCycle={walkCycle} />
+
               {/* Other users */}
               <UserList users={otherUsers} />
 
               {/* Current player (you) */}
-              <Player x={playerX} y={playerY} color="#00FF00" image={require('../assets/a4.png')} />
+              <Player x={playerX} y={playerY} image={require('../assets/a4.png')} />
 
               {/* Active tomato throws (from any player to any player) */}
               {activeTomatoThrows.map((tomatoThrow) => (

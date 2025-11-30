@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
-import AnimatedCharacter from './AnimatedCharacter';
+import AnimatedCharacter from './oldCharacter/AnimatedCharacter';
 import { WALKING_SPEED } from '../constants/character';
 
 /**
