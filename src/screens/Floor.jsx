@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
-import { StyleSheet, Pressable, View, Text, TouchableOpacity, Vibration } from 'react-native';
+import { StyleSheet, Pressable, View, Text, TouchableOpacity, Vibration, Image, TextInput, ScrollView } from 'react-native';
+import familyImage from '../images/family.png';
 import { showToast } from '../components/ToastStack';
 import FloorBackground from '../components/FloorBackground';
 import Header from '../components/Header';
@@ -16,6 +17,7 @@ import MessagePopup from '../components/MessagePopup';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 
 const { BODY_WIDTH, BODY_HEIGHT } = CHARACTER_DIMENSIONS;
@@ -32,6 +34,22 @@ const Floor = ({ navigation }) => {
   // Bottom sheet state
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // Video playlist bottom sheet state
+  const [isVideoPlaylistVisible, setIsVideoPlaylistVisible] = useState(false);
+  const [playlist, setPlaylist] = useState([
+    { id: '1', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+    { id: '2', url: 'https://www.youtube.com/watch?v=9bZkp7q19f0' },
+    { id: '3', url: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk' },
+    { id: '4', url: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ' },
+    { id: '5', url: 'https://www.youtube.com/watch?v=CevxZvSJLk8' },
+    { id: '6', url: 'https://www.youtube.com/watch?v=ZbZSe6N_BXs' },
+    { id: '7', url: 'https://www.youtube.com/watch?v=OPf0YbXqDm0' },
+    { id: '8', url: 'https://www.youtube.com/watch?v=hT_nvWreIhg' },
+    { id: '9', url: 'https://www.youtube.com/watch?v=60ItHLz5WEA' },
+    { id: '10', url: 'https://www.youtube.com/watch?v=pAgnJDJN4VA' },
+  ]);
+  const [urlInput, setUrlInput] = useState('');
 
   // Message popup state
   const [isMessagePopupVisible, setIsMessagePopupVisible] = useState(false);
@@ -269,17 +287,49 @@ const Floor = ({ navigation }) => {
     }
 
     // Move player to clicked position locally
-    walkTo(locationX,locationY);
+    walkTo(locationX, locationY);
 
     // Send position to server via WebSocket (convert to percentage)
     const position = formatPositionForAPI(locationX, locationY, width, height);
     movePlayer(position.x, position.y);
-  }, [checkUserClick, movePlayer, width, height]);
+  }, [checkUserClick, walkTo, width, height, movePlayer]);
+
+  // Handle opening video playlist bottom sheet
+  const handleOpenVideoPlaylist = useCallback(() => {
+    setIsVideoPlaylistVisible(true);
+  }, []);
+
+  // Handle adding video/song to playlist
+  const handleAddToPlaylist = useCallback(() => {
+    if (urlInput.trim()) {
+      const newItem = {
+        id: Date.now().toString(),
+        url: urlInput.trim(),
+      };
+      setPlaylist((prev) => [...prev, newItem]);
+      setUrlInput('');
+      showToast({
+        type: 'success',
+        text1: 'Added to playlist',
+        text2: 'Video/Song added successfully',
+      });
+    }
+  }, [urlInput]);
+
+  // Handle deleting video/song from playlist
+  const handleDeleteFromPlaylist = useCallback((id) => {
+    setPlaylist((prev) => prev.filter((item) => item.id !== id));
+    showToast({
+      type: 'info',
+      text1: 'Removed from playlist',
+      text2: 'Video/Song removed successfully',
+    });
+  }, []);
 
   return (
     <>
       <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
-      <VideoContainer />
+        <VideoContainer onOpenPlaylist={handleOpenVideoPlaylist} />
       <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
@@ -287,7 +337,7 @@ const Floor = ({ navigation }) => {
               <FloorBackground
                 width={width}
                 height={height}
-                imagePath={require('../images/floor3.png')}
+                imagePath={require('../images/floor4.jpg')}
               />
               <SimpleCharacter x={x} y={y} walkCycle={walkCycle} image={require('../assets/a4.png')}/>
 
@@ -384,6 +434,62 @@ const Floor = ({ navigation }) => {
         )}
       </BottomSheet>
 
+      {/* Video Playlist Bottom Sheet */}
+      <BottomSheet
+        visible={isVideoPlaylistVisible}
+        onClose={() => setIsVideoPlaylistVisible(false)}
+        height={500}
+      >
+        <View style={styles.playlistContainer}>
+          <Text style={styles.bottomSheetTitle}>Video Playlist</Text>
+
+          {/* Add URL Input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.urlInput}
+              placeholder="Enter video/song URL"
+              placeholderTextColor="#999"
+              value={urlInput}
+              onChangeText={setUrlInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddToPlaylist}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Playlist Items */}
+          <View style={styles.playlistSection}>
+            <Text style={styles.playlistSectionTitle}>
+              Current Playlist ({playlist.length})
+            </Text>
+            <ScrollView style={styles.playlistScroll}>
+              {playlist.length === 0 ? (
+                <Text style={styles.emptyPlaylistText}>No videos/songs in playlist yet</Text>
+              ) : (
+                playlist.map((item) => (
+                  <View key={item.id} style={styles.playlistItem}>
+                    <Text style={styles.playlistItemUrl} numberOfLines={1}>
+                      {item.url}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteFromPlaylist(item.id)}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#ff4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </BottomSheet>
+
       {/* Message Popup */}
       <MessagePopup
         visible={isMessagePopupVisible}
@@ -401,6 +507,13 @@ const Floor = ({ navigation }) => {
             sendMessage(selectedUser.id, message);
           }
         }}
+      />
+
+      {/* Family Image with absolute positioning */}
+      <Image
+        source={familyImage}
+        style={styles.familyImage}
+        resizeMode="contain"
       />
     </>
   );
@@ -438,6 +551,88 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333',
     fontWeight: '600',
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  playlistContainer: {
+    flex: 1,
+    paddingVertical: 20,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    gap: 10,
+  },
+  urlInput: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    color: '#333',
+  },
+  addButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  playlistSection: {
+    flex: 1,
+  },
+  playlistSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  playlistScroll: {
+    flex: 1,
+  },
+  emptyPlaylistText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  playlistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  playlistItemUrl: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    marginRight: 10,
+  },
+  deleteButton: {
+    padding: 5,
+  },
+  familyImage: {
+    position: 'absolute',
+    width: 180,
+    height: 200,
+    top: 280,
+    right: 10,
   },
 });
 
