@@ -22,6 +22,19 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { BODY_WIDTH, BODY_HEIGHT } = CHARACTER_DIMENSIONS;
 
+// Helper function to extract YouTube video ID from URL
+const extractYouTubeVideoId = (url) => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+    /youtube\.com\/embed\/([^&\n?#]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+};
 
 const Floor = ({ navigation }) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -38,18 +51,20 @@ const Floor = ({ navigation }) => {
   // Video playlist bottom sheet state
   const [isVideoPlaylistVisible, setIsVideoPlaylistVisible] = useState(false);
   const [playlist, setPlaylist] = useState([
-    { id: '1', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
-    { id: '2', url: 'https://www.youtube.com/watch?v=9bZkp7q19f0' },
-    { id: '3', url: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk' },
-    { id: '4', url: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ' },
-    { id: '5', url: 'https://www.youtube.com/watch?v=CevxZvSJLk8' },
-    { id: '6', url: 'https://www.youtube.com/watch?v=ZbZSe6N_BXs' },
-    { id: '7', url: 'https://www.youtube.com/watch?v=OPf0YbXqDm0' },
-    { id: '8', url: 'https://www.youtube.com/watch?v=hT_nvWreIhg' },
-    { id: '9', url: 'https://www.youtube.com/watch?v=60ItHLz5WEA' },
-    { id: '10', url: 'https://www.youtube.com/watch?v=pAgnJDJN4VA' },
+    { id: '1', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: 'Never Gonna Give You Up' },
+    { id: '2', url: 'https://www.youtube.com/watch?v=9bZkp7q19f0', title: 'Gangnam Style' },
+    { id: '3', url: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk', title: 'Despacito' },
+    { id: '4', url: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ', title: 'Bohemian Rhapsody' },
+    { id: '5', url: 'https://www.youtube.com/watch?v=CevxZvSJLk8', title: 'Kala Chashma' },
+    { id: '6', url: 'https://www.youtube.com/watch?v=ZbZSe6N_BXs', title: 'Happy' },
+    { id: '7', url: 'https://www.youtube.com/watch?v=OPf0YbXqDm0', title: 'Mark Ronson - Uptown Funk' },
+    { id: '8', url: 'https://www.youtube.com/watch?v=hT_nvWreIhg', title: 'See You Again' },
+    { id: '9', url: 'https://www.youtube.com/watch?v=60ItHLz5WEA', title: 'Faded' },
+    { id: '10', url: 'https://www.youtube.com/watch?v=pAgnJDJN4VA', title: 'Alone' },
   ]);
   const [urlInput, setUrlInput] = useState('');
+  const [currentVideoId, setCurrentVideoId] = useState('8yAanFW2FsY');
+  const [lastPlayTime, setLastPlayTime] = useState(0);
 
   // Message popup state
   const [isMessagePopupVisible, setIsMessagePopupVisible] = useState(false);
@@ -300,18 +315,45 @@ const Floor = ({ navigation }) => {
   }, []);
 
   // Handle adding video/song to playlist
-  const handleAddToPlaylist = useCallback(() => {
+  const handleAddToPlaylist = useCallback(async () => {
     if (urlInput.trim()) {
+      const videoId = extractYouTubeVideoId(urlInput.trim());
+
+      if (!videoId) {
+        showToast({
+          type: 'error',
+          text1: 'Invalid URL',
+          text2: 'Please enter a valid YouTube URL',
+        });
+        return;
+      }
+
+      // Fetch video title from YouTube oEmbed API
+      let videoTitle = 'YouTube Video';
+      try {
+        const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+        const response = await fetch(oEmbedUrl);
+
+        if (response.ok) {
+          const data = await response.json();
+          videoTitle = data.title || 'YouTube Video';
+        }
+      } catch (error) {
+        console.log('Failed to fetch video title:', error);
+        // Continue with default title if fetch fails
+      }
+
       const newItem = {
         id: Date.now().toString(),
         url: urlInput.trim(),
+        title: videoTitle,
       };
       setPlaylist((prev) => [...prev, newItem]);
       setUrlInput('');
       showToast({
         type: 'success',
         text1: 'Added to playlist',
-        text2: 'Video/Song added successfully',
+        text2: 'Video added successfully',
       });
     }
   }, [urlInput]);
@@ -326,10 +368,38 @@ const Floor = ({ navigation }) => {
     });
   }, []);
 
+  // Handle playing video with cooldown check
+  const handlePlayVideo = useCallback((url) => {
+    const currentTime = Date.now();
+    const timeSinceLastPlay = (currentTime - lastPlayTime) / 1000; // Convert to seconds
+
+    if (timeSinceLastPlay < 10 && lastPlayTime !== 0) {
+      const remainingTime = Math.ceil(10 - timeSinceLastPlay);
+      showToast({
+        type: 'error',
+        text1: 'Please wait',
+        text2: `You can play another video in ${remainingTime} seconds`,
+      });
+      return;
+    }
+
+    const videoId = extractYouTubeVideoId(url);
+    if (videoId) {
+      setCurrentVideoId(videoId);
+      setLastPlayTime(currentTime);
+      setIsVideoPlaylistVisible(false);
+      showToast({
+        type: 'success',
+        text1: 'Now playing',
+        text2: 'Video loaded successfully',
+      });
+    }
+  }, [lastPlayTime]);
+
   return (
     <>
       <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
-        <VideoContainer onOpenPlaylist={handleOpenVideoPlaylist} />
+        <VideoContainer videoId={currentVideoId} onOpenPlaylist={handleOpenVideoPlaylist} />
       <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
@@ -471,19 +541,41 @@ const Floor = ({ navigation }) => {
               {playlist.length === 0 ? (
                 <Text style={styles.emptyPlaylistText}>No videos/songs in playlist yet</Text>
               ) : (
-                playlist.map((item) => (
-                  <View key={item.id} style={styles.playlistItem}>
-                    <Text style={styles.playlistItemUrl} numberOfLines={1}>
-                      {item.url}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleDeleteFromPlaylist(item.id)}
-                    >
-                      <Ionicons name="trash-outline" size={20} color="#ff4444" />
-                    </TouchableOpacity>
-                  </View>
-                ))
+                playlist.map((item) => {
+                  const videoId = extractYouTubeVideoId(item.url);
+                  const thumbnailUrl = videoId
+                    ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+                    : null;
+
+                  return (
+                    <View key={item.id} style={styles.playlistItem}>
+                      {thumbnailUrl && (
+                        <Image
+                          source={{ uri: thumbnailUrl }}
+                          style={styles.thumbnail}
+                          resizeMode="cover"
+                        />
+                      )}
+                      <View style={styles.playlistItemContent}>
+                        <Text style={styles.playlistItemTitle} numberOfLines={2}>
+                          {item.title || 'YouTube Video'}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.playButton}
+                        onPress={() => handlePlayVideo(item.url)}
+                      >
+                        <Ionicons name="play-circle" size={32} color="#4CAF50" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteFromPlaylist(item.id)}
+                      >
+                        <Ionicons name="trash-outline" size={28} color="#ff4444" />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })
               )}
             </ScrollView>
           </View>
@@ -612,20 +704,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    padding: 10,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  playlistItemUrl: {
+  thumbnail: {
+    width: 120,
+    height: 68,
+    borderRadius: 6,
+    backgroundColor: '#ddd',
+    marginRight: 12,
+  },
+  playlistItemContent: {
     flex: 1,
-    fontSize: 14,
-    color: '#333',
+    justifyContent: 'center',
     marginRight: 10,
   },
+  playlistItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    lineHeight: 20,
+  },
+  playButton: {
+    padding: 10,
+    marginRight: 8,
+  },
   deleteButton: {
-    padding: 5,
+    padding: 10,
   },
   familyImage: {
     position: 'absolute',
