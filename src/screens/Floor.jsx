@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
-import { StyleSheet, Pressable, View, Text, TouchableOpacity, Vibration, Image, TextInput, ScrollView } from 'react-native';
+import { StyleSheet, Pressable, View, Text, TouchableOpacity, Vibration, Image, TextInput, ScrollView, BackHandler } from 'react-native';
 import Slider from '@react-native-community/slider';
 import familyImage from '../images/family.png';
 import { showToast } from '../components/ToastStack';
@@ -15,6 +15,7 @@ import RemotePlayer from '../components/RemotePlayer';
 
 import BottomSheet from '../components/BottomSheet';
 import MessagePopup from '../components/MessagePopup';
+import ExitConfirmationModal from '../components/ExitConfirmationModal';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
@@ -84,6 +85,9 @@ const Floor = ({ navigation }) => {
 
   // Message popup state
   const [isMessagePopupVisible, setIsMessagePopupVisible] = useState(false);
+
+  // Exit confirmation popup state
+  const [showExitPopup, setShowExitPopup] = useState(false);
 
   // Incoming tomato throws (tomatoes thrown at you or others)
   const [activeTomatoThrows, setActiveTomatoThrows] = useState([]);
@@ -520,6 +524,35 @@ const Floor = ({ navigation }) => {
     };
   }, []);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      setShowExitPopup(true);
+      return true; // Prevent default back action
+    });
+
+    return () => backHandler.remove();
+  }, []);
+
+  // Handle exit popup actions
+  const handleJoinBackSoon = useCallback(() => {
+    setShowExitPopup(false);
+    if (navigation) {
+      navigation.navigate('Spaces');
+    }
+  }, [navigation]);
+
+  const handleJoinLater = useCallback(() => {
+    setShowExitPopup(false);
+    if (navigation) {
+      navigation.navigate('Spaces');
+    }
+  }, [navigation]);
+
+  const handleCancelExit = useCallback(() => {
+    setShowExitPopup(false);
+  }, []);
+
   return (
     <>
       <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
@@ -799,6 +832,14 @@ const Floor = ({ navigation }) => {
         resizeMode="contain"
       />
       <Image source={speakerImage} style={styles.tableLampImage} resizeMode="contain" />
+
+      {/* Exit Confirmation Modal */}
+      <ExitConfirmationModal
+        visible={showExitPopup}
+        onJoinBackSoon={handleJoinBackSoon}
+        onJoinLater={handleJoinLater}
+        onCancel={handleCancelExit}
+      />
     </>
   );
 };

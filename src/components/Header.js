@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ExitConfirmationModal from './ExitConfirmationModal';
 
 const Header = ({ navigation, playersLength, isConnected }) => {
+  const [showExitPopup, setShowExitPopup] = useState(false);
+
   const handleBackPress = () => {
+    setShowExitPopup(true);
+  };
+
+  const handleJoinBackSoon = () => {
+    setShowExitPopup(false);
     if (navigation) {
       navigation.navigate('Spaces');
     }
+  };
+
+  const handleJoinLater = () => {
+    setShowExitPopup(false);
+    if (navigation) {
+      navigation.navigate('Spaces');
+    }
+  };
+
+  const handleCancel = () => {
+    setShowExitPopup(false);
   };
 
   return (
@@ -54,6 +73,14 @@ const Header = ({ navigation, playersLength, isConnected }) => {
       <View style={styles.bottomAccent}>
         <View style={styles.accentLine} />
       </View>
+
+      {/* Exit Confirmation Modal */}
+      <ExitConfirmationModal
+        visible={showExitPopup}
+        onJoinBackSoon={handleJoinBackSoon}
+        onJoinLater={handleJoinLater}
+        onCancel={handleCancel}
+      />
     </View>
   );
 };
