@@ -502,16 +502,22 @@ const Floor = ({ navigation }) => {
     }
   }, [lastPlayTime, playlist]);
 
-  // Auto-play first video from playlist on mount after 3 seconds
+  // Auto-play first video from playlist on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer1 = setTimeout(() => {
       if (playlist.length > 0) {
         handlePlayVideo(playlist[0].url);
-        setVideoLoader(false);
       }
-    }, 3000);
+    }, 100);
 
-    return () => clearTimeout(timer);
+    const timer2 = setTimeout(() => {
+      setVideoLoader(false);
+    }, 2000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
   }, []);
 
   return (

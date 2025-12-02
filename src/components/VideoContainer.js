@@ -86,19 +86,21 @@ const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist,
             <ActivityIndicator size="large" color="#4CAF50" />
             <Text style={styles.loaderText}>Loading media...</Text>
           </View>}
-          <YoutubePlayer
-            ref={playerRef}
-            height={videoHeight}
-            videoId={videoId}
-            play={playing}
-            onChangeState={onStateChange}
-            playerParams={{
-              controls: 0,  // Hide player controls
-              autoplay: 1,  // Enable autoplay
-              showinfo: 0,
-              autohide: 1,
-            }}
-          />
+          <View style={styles.youtubePlayerContainer} pointerEvents="none">
+            <YoutubePlayer
+              ref={playerRef}
+              height={videoHeight}
+              videoId={videoId}
+              play={playing}
+              onChangeState={onStateChange}
+              playerParams={{
+                controls: 0,  // Hide player controls
+                autoplay: 1,  // Enable autoplay
+                showinfo: 0,
+                autohide: 1,
+              }}
+            />
+          </View>
         </>
         )}
       </View>
@@ -132,13 +134,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   loaderContainer: {
-    borderWidth: 5,
-    borderColor: 'pink',
     position: 'absolute',
     top: 0,
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 20,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#2C2C2C',
