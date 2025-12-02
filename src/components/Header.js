@@ -14,14 +14,14 @@ const Header = ({ navigation, playersLength, isConnected }) => {
   const handleJoinBackSoon = () => {
     setShowExitPopup(false);
     if (navigation) {
-      navigation.navigate('Spaces');
+      navigation.goBack();
     }
   };
 
   const handleJoinLater = () => {
     setShowExitPopup(false);
     if (navigation) {
-      navigation.navigate('Spaces');
+      navigation.goBack();
     }
   };
 

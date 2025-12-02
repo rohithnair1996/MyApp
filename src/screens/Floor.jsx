@@ -538,14 +538,14 @@ const Floor = ({ navigation }) => {
   const handleJoinBackSoon = useCallback(() => {
     setShowExitPopup(false);
     if (navigation) {
-      navigation.navigate('Spaces');
+      navigation.goBack();
     }
   }, [navigation]);
 
   const handleJoinLater = useCallback(() => {
     setShowExitPopup(false);
     if (navigation) {
-      navigation.navigate('Spaces');
+      navigation.goBack();
     }
   }, [navigation]);
 
