@@ -19,7 +19,7 @@ import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import speakerImage from '../images/speaker.png';
 
 
 const { BODY_WIDTH, BODY_HEIGHT } = CHARACTER_DIMENSIONS;
@@ -798,6 +798,7 @@ const Floor = ({ navigation }) => {
         style={styles.familyImage}
         resizeMode="contain"
       />
+      <Image source={speakerImage} style={styles.tableLampImage} resizeMode="contain" />
     </>
   );
 };
@@ -930,6 +931,13 @@ const styles = StyleSheet.create({
     width: 180,
     height: 200,
     top: 280,
+    right: 10,
+  },
+  tableLampImage: {
+    position: 'absolute',
+    width: 40,
+    height: 80,
+    top: 320,
     right: 10,
   },
   infoSection: {

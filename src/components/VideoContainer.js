@@ -1,11 +1,11 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Image, StyleSheet, TouchableOpacity, View, Text, ActivityIndicator } from 'react-native';
-import Entypo from 'react-native-vector-icons/Entypo';
+import { Image, StyleSheet, TouchableOpacity, View, Text, ActivityIndicator, ImageBackground } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import DanceIcon from '../assets/svg/dance.svg';
-import speakerImage from '../images/speaker.png';
 import tableLampImage from '../images/table_lamp.png';
+import wallTileImage from '../images/wall_tile.png';
 
 const DEFAULT_VIDEO_ID = '8yAanFW2FsY';
 
@@ -64,7 +64,11 @@ const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist,
   }, [playing, onPlayerStateChange]);
 
   return (
-    <View style={styles.videoContainer}>
+    <ImageBackground
+      source={wallTileImage}
+      style={styles.videoContainer}
+      resizeMode="repeat"
+    >
       <View style={styles.videoContainerLeft}>
         <View style={styles.playListIcon}>
           <TouchableOpacity onPress={onOpenInfo}>
@@ -106,13 +110,15 @@ const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist,
       </View>
       <View style={styles.videoContainerRight}>
         <View style={styles.playListIcon}>
+          <TouchableOpacity>
+            <FontAwesome5 name={false ? "volume-mute" : "volume-up"} size={30} color="white" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.playListIcon}>
           <DanceIcon width={40} height={40} />
         </View>
-        <View style={styles.tableLamp}>
-          <Image source={speakerImage} style={styles.tableLampImage} resizeMode="contain" />
-        </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 });
 
@@ -162,7 +168,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 2)',
     backgroundColor: '#686868'
   },
-  tableLamp: {
+    tableLamp: {
   },
   tableLampImage: {
     width: 40,
