@@ -4,7 +4,7 @@ import YoutubePlayer from 'react-native-youtube-iframe';
 import tableLampImage from '../images/table_lamp.png';
 import speakerImage from '../images/speaker.png';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Entypo from 'react-native-vector-icons/Entypo';
+import DanceIcon from '../assets/svg/dance.svg';
 
 const DEFAULT_VIDEO_ID = '8yAanFW2FsY';
 
@@ -61,7 +61,7 @@ const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist }) => {
       </View>
       <View style={styles.videoContainerRight}>
         <View style={styles.playListIcon}>
-          <Entypo name="controller-next" size={40} color="white" />
+          <DanceIcon width={40} height={40} />
         </View>
         <View style={styles.tableLamp}>
           <Image source={speakerImage} style={styles.tableLampImage} resizeMode="contain" />
