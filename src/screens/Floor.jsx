@@ -64,6 +64,7 @@ const Floor = ({ navigation }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [videoLoader, setVideoLoader] = useState(true);
 
   const [playlist, setPlaylist] = useState([
     { id: '1', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: 'Never Gonna Give You Up' },
@@ -78,7 +79,7 @@ const Floor = ({ navigation }) => {
     { id: '10', url: 'https://www.youtube.com/watch?v=pAgnJDJN4VA', title: 'Alone' },
   ]);
   const [urlInput, setUrlInput] = useState('');
-  const [currentVideoId, setCurrentVideoId] = useState('8yAanFW2FsY');
+  const [currentVideoId, setCurrentVideoId] = useState('');
   const [lastPlayTime, setLastPlayTime] = useState(0);
 
   // Message popup state
@@ -384,11 +385,12 @@ const Floor = ({ navigation }) => {
       const nextVideo = playlist[currentIndex + 1];
       const videoId = extractYouTubeVideoId(nextVideo.url);
       if (videoId) {
+        setVideoLoader(true);
         setCurrentVideoId(videoId);
         setIsPlaying(true);
         showToast({
           type: 'success',
-          text1: 'Next video',
+          text1: 'Now Playing',
           text2: nextVideo.title,
         });
       }
@@ -481,29 +483,58 @@ const Floor = ({ navigation }) => {
 
     const videoId = extractYouTubeVideoId(url);
     if (videoId) {
+      // Find video title from playlist
+      const video = playlist.find((item) => {
+        const itemVideoId = extractYouTubeVideoId(item.url);
+        return itemVideoId === videoId;
+      });
+      const videoTitle = video ? video.title : 'Unknown Video';
+
+      setVideoLoader(true);
       setCurrentVideoId(videoId);
       setLastPlayTime(currentTime);
       setIsVideoPlaylistVisible(false);
       showToast({
         type: 'success',
-        text1: 'Now playing',
-        text2: 'Video loaded successfully',
+        text1: 'Now Playing',
+        text2: videoTitle,
       });
     }
-  }, [lastPlayTime]);
+  }, [lastPlayTime, playlist]);
+
+  // Auto-play first video from playlist on mount after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (playlist.length > 0) {
+        handlePlayVideo(playlist[0].url);
+        setVideoLoader(false);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
       <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
-        <VideoContainer
-          ref={videoPlayerRef}
-          videoId={currentVideoId}
-          onOpenPlaylist={handleOpenVideoPlaylist}
-          onOpenInfo={handleOpenInfo}
-          onPlayerStateChange={(state, playing) => {
-            setIsPlaying(playing);
-          }}
-        />
+      <VideoContainer
+        ref={videoPlayerRef}
+        videoId={currentVideoId}
+        onOpenPlaylist={handleOpenVideoPlaylist}
+        onOpenInfo={handleOpenInfo}
+        isLoading={videoLoader}
+        onPlayerStateChange={(state, playing) => {
+          setIsPlaying(playing);
+          // Hide loader when video starts playing
+          if (state === 'playing') {
+            setVideoLoader(false);
+          }
+          // Auto-play next song when current song ends
+          if (state === 'ended') {
+            handleNextVideo();
+          }
+        }}
+      />
       <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
@@ -513,7 +544,7 @@ const Floor = ({ navigation }) => {
                 height={height}
                 imagePath={require('../images/floor4.jpg')}
               />
-              <SimpleCharacter x={x} y={y} walkCycle={walkCycle} image={require('../assets/a4.png')}/>
+              <SimpleCharacter x={x} y={y} walkCycle={walkCycle} image={require('../assets/a4.png')} />
 
               {/* Other users */}
               {players

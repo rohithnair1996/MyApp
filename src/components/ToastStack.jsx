@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 let toastId = 0;
 let addToastCallback = null;
@@ -77,18 +78,23 @@ const ToastStack = () => {
             getToastStyle(toast.type),
             {
               opacity: toast.opacity,
-              top: 100 + index * 90, // Stack toasts with 90px spacing
+              top: 80 + index * 65, // Stack toasts with 65px spacing
             },
           ]}
         >
-          <TouchableOpacity
-            style={styles.toastContent}
-            onPress={() => removeToast(toast.id)}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.text1}>{toast.text1}</Text>
-            {toast.text2 && <Text style={styles.text2}>{toast.text2}</Text>}
-          </TouchableOpacity>
+          <View style={styles.toastContent}>
+            <View style={styles.textContainer}>
+              <Text style={styles.text1}>{toast.text1}</Text>
+              {toast.text2 && <Text style={styles.text2}>{toast.text2}</Text>}
+            </View>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => removeToast(toast.id)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       ))}
     </View>
@@ -108,16 +114,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 8,
+    padding: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
   },
   toastContent: {
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  textContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  closeButton: {
+    padding: 2,
   },
   info: {
     backgroundColor: '#3498db',
@@ -129,13 +145,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#e74c3c',
   },
   text1: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   text2: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#fff',
   },
 });

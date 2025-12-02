@@ -1,5 +1,5 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View, Text, ActivityIndicator } from 'react-native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import YoutubePlayer from 'react-native-youtube-iframe';
@@ -9,7 +9,7 @@ import tableLampImage from '../images/table_lamp.png';
 
 const DEFAULT_VIDEO_ID = '8yAanFW2FsY';
 
-const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist, onOpenInfo, onPlayerStateChange }, ref) => {
+const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist, onOpenInfo, onPlayerStateChange, isLoading = false }, ref) => {
   const [playing, setPlaying] = useState(true);
   const [containerWidth, setContainerWidth] = useState(0);
   const playerRef = useRef(null);
@@ -81,7 +81,11 @@ const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist,
         </View>
       </View>
       <View style={styles.mediaContainer} onLayout={handleLayout}>
-        {containerWidth > 0 && (
+        {containerWidth > 0 && (<>
+          {isLoading && <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+            <Text style={styles.loaderText}>Loading media...</Text>
+          </View>}
           <YoutubePlayer
             ref={playerRef}
             height={videoHeight}
@@ -95,6 +99,7 @@ const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist,
               autohide: 1,
             }}
           />
+        </>
         )}
       </View>
       <View style={styles.videoContainerRight}>
@@ -125,6 +130,24 @@ const styles = StyleSheet.create({
     minHeight: 100,
     borderRadius: 20,
     overflow: 'hidden',
+  },
+  loaderContainer: {
+    borderWidth: 5,
+    borderColor: 'pink',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2C2C2C',
+  },
+  loaderText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginTop: 12,
+    fontWeight: '500',
   },
   videoContainerLeft: {
     borderWidth: 1,
