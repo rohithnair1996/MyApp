@@ -1,16 +1,18 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import YoutubePlayer from 'react-native-youtube-iframe';
-import tableLampImage from '../images/table_lamp.png';
-import speakerImage from '../images/speaker.png';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import DanceIcon from '../assets/svg/dance.svg';
+import speakerImage from '../images/speaker.png';
+import tableLampImage from '../images/table_lamp.png';
 
 const DEFAULT_VIDEO_ID = '8yAanFW2FsY';
 
-const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist }) => {
+const VideoContainer = forwardRef(({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist, onOpenInfo, onPlayerStateChange }, ref) => {
   const [playing, setPlaying] = useState(true);
   const [containerWidth, setContainerWidth] = useState(0);
+  const playerRef = useRef(null);
 
   // Calculate video height based on actual container width (16:9 aspect ratio) - memoized
   const videoHeight = useMemo(() => (containerWidth * 9) / 16, [containerWidth]);
@@ -20,6 +22,29 @@ const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist }) => {
     const { width } = event.nativeEvent.layout;
     setContainerWidth(width);
   }, []);
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    play: () => setPlaying(true),
+    pause: () => setPlaying(false),
+    seekTo: async (seconds) => {
+      if (playerRef.current) {
+        await playerRef.current.seekTo(seconds);
+      }
+    },
+    getCurrentTime: async () => {
+      if (playerRef.current) {
+        return await playerRef.current.getCurrentTime();
+      }
+      return 0;
+    },
+    getDuration: async () => {
+      if (playerRef.current) {
+        return await playerRef.current.getDuration();
+      }
+      return 0;
+    },
+  }));
 
   // Autoplay when videoId changes
   useEffect(() => {
@@ -31,11 +56,21 @@ const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist }) => {
     if (state === 'ended') {
       setPlaying(true);
     }
-  }, []);
+
+    // Notify parent of state changes
+    if (onPlayerStateChange) {
+      onPlayerStateChange(state, playing);
+    }
+  }, [playing, onPlayerStateChange]);
 
   return (
     <View style={styles.videoContainer}>
       <View style={styles.videoContainerLeft}>
+        <View style={styles.playListIcon}>
+          <TouchableOpacity onPress={onOpenInfo}>
+            <MaterialIcons name="settings-remote" size={40} color="white" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.playListIcon}>
           <TouchableOpacity onPress={onOpenPlaylist}>
             <MaterialIcons name="local-movies" size={40} color="white" />
@@ -48,6 +83,7 @@ const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist }) => {
       <View style={styles.mediaContainer} onLayout={handleLayout}>
         {containerWidth > 0 && (
           <YoutubePlayer
+            ref={playerRef}
             height={videoHeight}
             videoId={videoId}
             play={playing}
@@ -55,6 +91,8 @@ const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist }) => {
             playerParams={{
               controls: 0,  // Hide player controls
               autoplay: 1,  // Enable autoplay
+              showinfo: 0,
+              autohide: 1,
             }}
           />
         )}
@@ -69,7 +107,7 @@ const VideoContainer = ({ videoId = DEFAULT_VIDEO_ID, onOpenPlaylist }) => {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   videoContainer: {
@@ -113,5 +151,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(VideoContainer);
-
+export default VideoContainer;

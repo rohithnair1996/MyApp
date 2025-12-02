@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Canvas } from '@shopify/react-native-skia';
 import { StyleSheet, Pressable, View, Text, TouchableOpacity, Vibration, Image, TextInput, ScrollView } from 'react-native';
+import Slider from '@react-native-community/slider';
 import familyImage from '../images/family.png';
 import { showToast } from '../components/ToastStack';
 import FloorBackground from '../components/FloorBackground';
@@ -18,6 +19,7 @@ import { useGameSocket } from '../hooks/useGameSocket';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 
 const { BODY_WIDTH, BODY_HEIGHT } = CHARACTER_DIMENSIONS;
@@ -44,12 +46,25 @@ const Floor = ({ navigation }) => {
   // WebSocket connection for multiplayer
   const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, pokeUser, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, incomingPokes, clearTomatoThrow, clearPlaneThrow, clearMessage, clearPoke } = useGameSocket();
 
+  // Video player ref
+  const videoPlayerRef = useRef(null);
+
   // Bottom sheet state
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   // Video playlist bottom sheet state
   const [isVideoPlaylistVisible, setIsVideoPlaylistVisible] = useState(false);
+
+  // Info bottom sheet state
+  const [isInfoBottomSheetVisible, setIsInfoBottomSheetVisible] = useState(false);
+
+  // Video player state
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isSeeking, setIsSeeking] = useState(false);
+
   const [playlist, setPlaylist] = useState([
     { id: '1', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: 'Never Gonna Give You Up' },
     { id: '2', url: 'https://www.youtube.com/watch?v=9bZkp7q19f0', title: 'Gangnam Style' },
@@ -314,6 +329,87 @@ const Floor = ({ navigation }) => {
     setIsVideoPlaylistVisible(true);
   }, []);
 
+  // Handle opening info bottom sheet
+  const handleOpenInfo = useCallback(() => {
+    setIsInfoBottomSheetVisible(true);
+  }, []);
+
+  // Update video progress periodically
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (videoPlayerRef.current && !isSeeking && isPlaying) {
+        try {
+          const time = await videoPlayerRef.current.getCurrentTime();
+          const dur = await videoPlayerRef.current.getDuration();
+          setCurrentTime(time);
+          setDuration(dur);
+        } catch (error) {
+          // Ignore errors from player
+        }
+      }
+    }, 500); // Update every 500ms
+
+    return () => clearInterval(interval);
+  }, [isSeeking, isPlaying]);
+
+  // Handle play/pause
+  const handlePlayPause = useCallback(() => {
+    if (videoPlayerRef.current) {
+      if (isPlaying) {
+        videoPlayerRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoPlayerRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  }, [isPlaying]);
+
+  // Handle seek
+  const handleSeek = useCallback((value) => {
+    if (videoPlayerRef.current) {
+      videoPlayerRef.current.seekTo(value);
+      setCurrentTime(value);
+    }
+  }, []);
+
+  // Handle next video
+  const handleNextVideo = useCallback(() => {
+    const currentIndex = playlist.findIndex((item) => {
+      const videoId = extractYouTubeVideoId(item.url);
+      return videoId === currentVideoId;
+    });
+
+    if (currentIndex !== -1 && currentIndex < playlist.length - 1) {
+      const nextVideo = playlist[currentIndex + 1];
+      const videoId = extractYouTubeVideoId(nextVideo.url);
+      if (videoId) {
+        setCurrentVideoId(videoId);
+        setIsPlaying(true);
+        showToast({
+          type: 'success',
+          text1: 'Next video',
+          text2: nextVideo.title,
+        });
+      }
+    } else {
+      showToast({
+        type: 'info',
+        text1: 'End of playlist',
+        text2: 'No more videos',
+      });
+    }
+  }, [playlist, currentVideoId]);
+
+  // Get current video name
+  const getCurrentVideoName = useCallback(() => {
+    const currentVideo = playlist.find((item) => {
+      const videoId = extractYouTubeVideoId(item.url);
+      return videoId === currentVideoId;
+    });
+    return currentVideo ? currentVideo.title : 'Unknown Video';
+  }, [playlist, currentVideoId]);
+
   // Handle adding video/song to playlist
   const handleAddToPlaylist = useCallback(async () => {
     if (urlInput.trim()) {
@@ -399,7 +495,15 @@ const Floor = ({ navigation }) => {
   return (
     <>
       <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
-        <VideoContainer videoId={currentVideoId} onOpenPlaylist={handleOpenVideoPlaylist} />
+        <VideoContainer
+          ref={videoPlayerRef}
+          videoId={currentVideoId}
+          onOpenPlaylist={handleOpenVideoPlaylist}
+          onOpenInfo={handleOpenInfo}
+          onPlayerStateChange={(state, playing) => {
+            setIsPlaying(playing);
+          }}
+        />
       <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
@@ -582,6 +686,56 @@ const Floor = ({ navigation }) => {
         </View>
       </BottomSheet>
 
+      {/* Info Bottom Sheet */}
+      <BottomSheet
+        visible={isInfoBottomSheetVisible}
+        onClose={() => setIsInfoBottomSheetVisible(false)}
+        height={350}
+      >
+        <View style={styles.bottomSheetContent}>
+          <Text style={styles.bottomSheetTitle}>Now Playing</Text>
+
+          {/* Currently Playing Video */}
+          <View style={styles.videoControlSection}>
+            <Text style={styles.videoTitleText} numberOfLines={2}>
+              {getCurrentVideoName()}
+            </Text>
+          </View>
+
+          {/* Info Message */}
+          <Text style={styles.sliderInfoText}>
+            Note: Adjusting the slider will affect the video playback for all users in the room.
+          </Text>
+
+          {/* Video Progress Slider */}
+          <View style={styles.sliderSection}>
+            <Text style={styles.timeText}>
+              {Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}
+            </Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={duration || 100}
+              value={currentTime}
+              onValueChange={(value) => {
+                setIsSeeking(true);
+                setCurrentTime(value);
+              }}
+              onSlidingComplete={(value) => {
+                handleSeek(value);
+                setIsSeeking(false);
+              }}
+              minimumTrackTintColor="#4CAF50"
+              maximumTrackTintColor="#d3d3d3"
+              thumbTintColor="#4CAF50"
+            />
+            <Text style={styles.timeText}>
+              {Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')}
+            </Text>
+          </View>
+        </View>
+      </BottomSheet>
+
       {/* Message Popup */}
       <MessagePopup
         visible={isMessagePopupVisible}
@@ -740,6 +894,78 @@ const styles = StyleSheet.create({
     height: 200,
     top: 280,
     right: 10,
+  },
+  infoSection: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 6,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+  },
+  videoControlSection: {
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: '#4CAF50',
+  },
+  videoTitleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    lineHeight: 24,
+  },
+  sliderInfoText: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+    marginBottom: 16,
+    lineHeight: 16,
+  },
+  sliderSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 10,
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  timeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    width: 45,
+    textAlign: 'center',
+  },
+  playbackControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 30,
+    marginBottom: 20,
+  },
+  controlButton: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 50,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  divider: {
+    height: 2,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 20,
   },
 });
 
