@@ -7,6 +7,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import Floor from './src/screens/Floor';
 import LandingScreen from './src/screens/LandingScreen';
 import SpacesScreen from './src/screens/SpacesScreen';
+import DummyScreen from './src/screens/DummyScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -14,7 +15,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Landing">
+        <Stack.Navigator initialRouteName="Dummy">
+          <Stack.Screen
+            name="Dummy"
+            component={DummyScreen}
+            options={{
+              headerShown: false,
+              statusBarColor: '#000000',
+              statusBarTranslucent: true,
+            }}
+          />
           <Stack.Screen
             name="Landing"
             component={LandingScreen}
