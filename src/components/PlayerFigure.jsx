@@ -1,24 +1,23 @@
 import React, { useEffect } from 'react';
-import { 
-  Group, 
-  RoundedRect, 
-  Circle, 
-  Line, 
-  vec, 
+import {
+  Group,
+  RoundedRect,
+  Circle,
+  Line,
+  vec,
   Text,
   useFont,
 } from '@shopify/react-native-skia';
-import { 
-  useSharedValue, 
-  withRepeat, 
-  withTiming, 
+import {
+  useSharedValue,
+  withRepeat,
+  withTiming,
   withSequence,
-  withDelay,
+  withSpring,
   Easing,
   useDerivedValue,
   cancelAnimation,
   interpolate,
-  runOnJS,
 } from 'react-native-reanimated';
 
 // ═══════════════════════════════════════════════════════════
@@ -35,12 +34,19 @@ const AVATAR = {
 
 const ANIMATION = {
   breathing: { amount: 3, duration: 2000 },
-  walking: { 
+  walking: {
     armSwing: 15,
     legSwing: 20,
     footLift: 5,
     bodyBob: 3,
     stepDuration: 400,
+  },
+  running: {
+    armSwing: 35,
+    legSwing: 40,
+    footLift: 12,
+    bodyBob: 8,
+    stepDuration: 180,
   },
   jumping: {
     crouchAmount: 10,
@@ -50,6 +56,13 @@ const ANIMATION = {
     airDuration: 100,
     landDuration: 150,
     armRaise: 70,
+    legTuck: 25,
+    stretchY: 1.15,
+    stretchX: 0.9,
+    squashY: 0.75,
+    squashX: 1.2,
+    squashDuration: 100,
+    recoverDuration: 300,
   },
   dancing: {
     bounce: 8,
@@ -65,11 +78,17 @@ const ANIMATION = {
     waveCount: 3,
   },
   blinking: {
-    closeDuration: 50,    // How fast eyes close
-    openDuration: 50,     // How fast eyes open
-    closedDuration: 80,   // How long eyes stay closed
-    minInterval: 2000,    // Minimum time between blinks
-    maxInterval: 5000,    // Maximum time between blinks
+    closeDuration: 50,
+    openDuration: 50,
+    closedDuration: 80,
+    minInterval: 2000,
+    maxInterval: 5000,
+  },
+  clapping: {
+    armRaise: 45,
+    clapDistance: 5,
+    clapDuration: 150,
+    clapCount: 4,
   },
 };
 
@@ -78,17 +97,19 @@ const DEG_TO_RAD = Math.PI / 180;
 // ═══════════════════════════════════════════════════════════
 // PLAYER FIGURE COMPONENT
 // ═══════════════════════════════════════════════════════════
-const PlayerFigure = ({ 
-  x, 
-  y, 
-  playerName, 
-  color = '#4A90E2', 
+const PlayerFigure = ({
+  x,
+  y,
+  playerName,
+  color = '#4A90E2',
   isWalking = false,
+  isRunning = false,
   isJumping = false,
   isDancing = false,
   isWaving = false,
+  isClapping = false,
 }) => {
-  
+
   const font = useFont(require('../../assets/fonts/Fredoka-Medium.ttf'), 12);
 
   // ═══════════════════════════════════════════════════════════
@@ -100,60 +121,52 @@ const PlayerFigure = ({
   const danceProgress = useSharedValue(0);
   const waveProgress = useSharedValue(0);
   const waveArmRaise = useSharedValue(0);
-  const blinkProgress = useSharedValue(0);  // NEW! 0=open, 1=closed
+  const blinkProgress = useSharedValue(0);
+  const scaleX = useSharedValue(1);
+  const scaleY = useSharedValue(1);
+  const clapProgress = useSharedValue(0);
+  const clapArmRaise = useSharedValue(0);
 
   // ═══════════════════════════════════════════════════════════
-  // BLINK ANIMATION (NEW!)
+  // BLINK ANIMATION
   // ═══════════════════════════════════════════════════════════
   const triggerBlink = () => {
     const { closeDuration, openDuration, closedDuration } = ANIMATION.blinking;
-    
-    // Blink sequence: open → closed → open
     blinkProgress.value = withSequence(
-      withTiming(1, { duration: closeDuration }),  // Close eyes
-      withTiming(1, { duration: closedDuration }), // Keep closed
-      withTiming(0, { duration: openDuration })    // Open eyes
+      withTiming(1, { duration: closeDuration }),
+      withTiming(1, { duration: closedDuration }),
+      withTiming(0, { duration: openDuration })
     );
   };
 
   const scheduleNextBlink = () => {
     const { minInterval, maxInterval } = ANIMATION.blinking;
     const randomDelay = minInterval + Math.random() * (maxInterval - minInterval);
-    
     setTimeout(() => {
       triggerBlink();
-      scheduleNextBlink();  // Schedule next blink
+      scheduleNextBlink();
     }, randomDelay);
   };
 
-  // Start blinking when component mounts
   useEffect(() => {
-    // Initial delay before first blink
     const initialDelay = 1000 + Math.random() * 2000;
     const timeoutId = setTimeout(() => {
       triggerBlink();
       scheduleNextBlink();
     }, initialDelay);
-
     return () => clearTimeout(timeoutId);
   }, []);
 
-  // ═══════════════════════════════════════════════════════════
-  // EYE HEIGHT (for blink) (NEW!)
-  // ═══════════════════════════════════════════════════════════
-  const eyeScaleY = useDerivedValue(() => {
-    // 1 = fully open, 0 = fully closed
-    return 1 - blinkProgress.value;
-  });
+  const eyeScaleY = useDerivedValue(() => 1 - blinkProgress.value);
 
   // ═══════════════════════════════════════════════════════════
   // BREATHING ANIMATION
   // ═══════════════════════════════════════════════════════════
   useEffect(() => {
-    if (!isWalking && !isJumping && !isDancing && !isWaving) {
+    if (!isWalking && !isRunning && !isJumping && !isDancing && !isWaving && !isClapping) {
       breathProgress.value = withRepeat(
-        withTiming(1, { 
-          duration: ANIMATION.breathing.duration, 
+        withTiming(1, {
+          duration: ANIMATION.breathing.duration,
           easing: Easing.inOut(Easing.sin),
         }),
         -1,
@@ -163,16 +176,20 @@ const PlayerFigure = ({
       cancelAnimation(breathProgress);
       breathProgress.value = withTiming(0, { duration: 200 });
     }
-  }, [isWalking, isJumping, isDancing, isWaving]);
+  }, [isWalking, isRunning, isJumping, isDancing, isWaving, isClapping]);
 
   // ═══════════════════════════════════════════════════════════
-  // WALKING ANIMATION
+  // WALKING / RUNNING ANIMATION
   // ═══════════════════════════════════════════════════════════
   useEffect(() => {
-    if (isWalking && !isJumping && !isDancing && !isWaving) {
+    if ((isWalking || isRunning) && !isJumping && !isDancing && !isWaving && !isClapping) {
+      const stepDuration = isRunning
+        ? ANIMATION.running.stepDuration
+        : ANIMATION.walking.stepDuration;
+
       walkProgress.value = withRepeat(
-        withTiming(1, { 
-          duration: ANIMATION.walking.stepDuration, 
+        withTiming(1, {
+          duration: stepDuration,
           easing: Easing.linear,
         }),
         -1,
@@ -182,23 +199,44 @@ const PlayerFigure = ({
       cancelAnimation(walkProgress);
       walkProgress.value = withTiming(0.5, { duration: 200 });
     }
-  }, [isWalking, isJumping, isDancing, isWaving]);
+  }, [isWalking, isRunning, isJumping, isDancing, isWaving, isClapping]);
 
   // ═══════════════════════════════════════════════════════════
   // JUMP ANIMATION
   // ═══════════════════════════════════════════════════════════
   useEffect(() => {
     if (isJumping) {
-      const { crouchDuration, launchDuration, airDuration, landDuration } = ANIMATION.jumping;
-      
+      const {
+        crouchDuration, launchDuration, airDuration, landDuration,
+        stretchX, stretchY, squashX, squashY, squashDuration,
+      } = ANIMATION.jumping;
+
       jumpProgress.value = withSequence(
         withTiming(-0.2, { duration: crouchDuration, easing: Easing.out(Easing.quad) }),
         withTiming(1, { duration: launchDuration, easing: Easing.out(Easing.quad) }),
         withTiming(1, { duration: airDuration }),
         withTiming(0, { duration: landDuration, easing: Easing.in(Easing.quad) })
       );
+
+      scaleX.value = withSequence(
+        withTiming(squashX, { duration: crouchDuration }),
+        withTiming(stretchX, { duration: launchDuration }),
+        withTiming(1, { duration: airDuration }),
+        withTiming(squashX, { duration: squashDuration }),
+        withSpring(1, { damping: 8, stiffness: 200 })
+      );
+
+      scaleY.value = withSequence(
+        withTiming(squashY, { duration: crouchDuration }),
+        withTiming(stretchY, { duration: launchDuration }),
+        withTiming(1, { duration: airDuration }),
+        withTiming(squashY, { duration: squashDuration }),
+        withSpring(1, { damping: 8, stiffness: 200 })
+      );
     } else {
       jumpProgress.value = withTiming(0, { duration: 100 });
+      scaleX.value = withTiming(1, { duration: 100 });
+      scaleY.value = withTiming(1, { duration: 100 });
     }
   }, [isJumping]);
 
@@ -208,8 +246,8 @@ const PlayerFigure = ({
   useEffect(() => {
     if (isDancing) {
       danceProgress.value = withRepeat(
-        withTiming(1, { 
-          duration: ANIMATION.dancing.beatDuration, 
+        withTiming(1, {
+          duration: ANIMATION.dancing.beatDuration,
           easing: Easing.inOut(Easing.sin),
         }),
         -1,
@@ -227,17 +265,9 @@ const PlayerFigure = ({
   useEffect(() => {
     if (isWaving) {
       const { waveDuration, waveCount } = ANIMATION.waving;
-      
-      waveArmRaise.value = withTiming(1, { 
-        duration: 200, 
-        easing: Easing.out(Easing.quad) 
-      });
-      
+      waveArmRaise.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.quad) });
       waveProgress.value = withRepeat(
-        withTiming(1, { 
-          duration: waveDuration, 
-          easing: Easing.inOut(Easing.sin),
-        }),
+        withTiming(1, { duration: waveDuration, easing: Easing.inOut(Easing.sin) }),
         waveCount * 2,
         true
       );
@@ -249,25 +279,59 @@ const PlayerFigure = ({
   }, [isWaving]);
 
   // ═══════════════════════════════════════════════════════════
-  // WAVE ARM ANGLE
+  // CLAP ANIMATION
+  // ═══════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (isClapping) {
+      const { clapDuration, clapCount } = ANIMATION.clapping;
+
+      clapArmRaise.value = withTiming(1, {
+        duration: 200,
+        easing: Easing.out(Easing.quad)
+      });
+
+      clapProgress.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: clapDuration, easing: Easing.in(Easing.quad) }),
+          withTiming(0, { duration: clapDuration, easing: Easing.out(Easing.quad) })
+        ),
+        clapCount,
+        false
+      );
+    } else {
+      cancelAnimation(clapProgress);
+      clapProgress.value = withTiming(0, { duration: 100 });
+      clapArmRaise.value = withTiming(0, { duration: 200 });
+    }
+  }, [isClapping]);
+
+  // ═══════════════════════════════════════════════════════════
+  // WAVE ANGLE
   // ═══════════════════════════════════════════════════════════
   const waveAngle = useDerivedValue(() => {
     const { armRaise, waveSwing } = ANIMATION.waving;
     const raise = waveArmRaise.value * armRaise;
-    const swing = interpolate(
-      waveProgress.value,
-      [0, 0.5, 1],
-      [-waveSwing, 0, waveSwing]
-    );
+    const swing = interpolate(waveProgress.value, [0, 0.5, 1], [-waveSwing, 0, waveSwing]);
     return raise + (waveArmRaise.value * swing);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // CLAP ANGLES
+  // ═══════════════════════════════════════════════════════════
+  const clapAngle = useDerivedValue(() => {
+    const { armRaise } = ANIMATION.clapping;
+    return clapArmRaise.value * armRaise;
+  });
+
+  const clapTogether = useDerivedValue(() => {
+    return clapProgress.value;
   });
 
   // ═══════════════════════════════════════════════════════════
   // DANCE DERIVED VALUES
   // ═══════════════════════════════════════════════════════════
   const danceBounce = useDerivedValue(() => {
-    const bounceCycle = Math.abs(Math.sin(danceProgress.value * Math.PI * 2));
-    return bounceCycle * ANIMATION.dancing.bounce;
+    return Math.abs(Math.sin(danceProgress.value * Math.PI * 2)) * ANIMATION.dancing.bounce;
   });
 
   const danceWiggle = useDerivedValue(() => {
@@ -275,19 +339,11 @@ const PlayerFigure = ({
   });
 
   const danceLeftArmAngle = useDerivedValue(() => {
-    return interpolate(
-      danceProgress.value,
-      [0, 0.5, 1],
-      [ANIMATION.dancing.armWave, 20, ANIMATION.dancing.armWave]
-    );
+    return interpolate(danceProgress.value, [0, 0.5, 1], [ANIMATION.dancing.armWave, 20, ANIMATION.dancing.armWave]);
   });
 
   const danceRightArmAngle = useDerivedValue(() => {
-    return interpolate(
-      danceProgress.value,
-      [0, 0.5, 1],
-      [20, ANIMATION.dancing.armWave, 20]
-    );
+    return interpolate(danceProgress.value, [0, 0.5, 1], [20, ANIMATION.dancing.armWave, 20]);
   });
 
   // ═══════════════════════════════════════════════════════════
@@ -295,35 +351,29 @@ const PlayerFigure = ({
   // ═══════════════════════════════════════════════════════════
   const jumpOffset = useDerivedValue(() => {
     const { crouchAmount, jumpHeight } = ANIMATION.jumping;
-    
     if (jumpProgress.value < 0) {
       return jumpProgress.value * crouchAmount * 5;
-    } else {
-      return jumpProgress.value * jumpHeight;
     }
+    return jumpProgress.value * jumpHeight;
   });
 
   // ═══════════════════════════════════════════════════════════
-  // WALK BOB
+  // WALK / RUN BOB
   // ═══════════════════════════════════════════════════════════
   const walkBob = useDerivedValue(() => {
-    const bobCycle = Math.abs(Math.sin(walkProgress.value * Math.PI * 2));
-    return bobCycle * ANIMATION.walking.bodyBob;
+    const bobAmount = isRunning
+      ? ANIMATION.running.bodyBob
+      : ANIMATION.walking.bodyBob;
+    return Math.abs(Math.sin(walkProgress.value * Math.PI * 2)) * bobAmount;
   });
 
   // ═══════════════════════════════════════════════════════════
   // COMBINED BODY OFFSET
   // ═══════════════════════════════════════════════════════════
   const bodyOffset = useDerivedValue(() => {
-    if (jumpProgress.value !== 0) {
-      return jumpOffset.value;
-    }
-    if (isDancing) {
-      return danceBounce.value;
-    }
-    if (isWalking) {
-      return walkBob.value;
-    }
+    if (jumpProgress.value !== 0) return jumpOffset.value;
+    if (isDancing) return danceBounce.value;
+    if (isWalking || isRunning) return walkBob.value;
     return breathProgress.value * ANIMATION.breathing.amount;
   });
 
@@ -331,42 +381,80 @@ const PlayerFigure = ({
   // BODY X OFFSET
   // ═══════════════════════════════════════════════════════════
   const bodyXOffset = useDerivedValue(() => {
-    if (isDancing) {
-      return danceWiggle.value;
-    }
+    if (isDancing) return danceWiggle.value;
     return 0;
   });
 
   // ═══════════════════════════════════════════════════════════
+  // SCALED BODY DIMENSIONS
+  // ═══════════════════════════════════════════════════════════
+  const scaledBodyWidth = useDerivedValue(() => AVATAR.body.width * scaleX.value);
+  const scaledBodyHeight = useDerivedValue(() => AVATAR.body.height * scaleY.value);
+
+  // ═══════════════════════════════════════════════════════════
   // BODY POSITIONS
   // ═══════════════════════════════════════════════════════════
+  const bodyX = useDerivedValue(() => x + bodyXOffset.value);
+  const bodyLeftX = useDerivedValue(() => bodyX.value - scaledBodyWidth.value / 2);
+  const bodyRightX = useDerivedValue(() => bodyX.value + scaledBodyWidth.value / 2);
+
   const bodyTopY = useDerivedValue(() => {
     const normalY = y - AVATAR.body.height - AVATAR.leg.height;
-    return normalY - bodyOffset.value;
-  });
-
-  const bodyX = useDerivedValue(() => {
-    return x + bodyXOffset.value;
-  });
-
-  const bodyLeftX = useDerivedValue(() => {
-    return bodyX.value - AVATAR.body.width / 2;
-  });
-
-  const bodyRightX = useDerivedValue(() => {
-    return bodyX.value + AVATAR.body.width / 2;
+    const scaleOffset = (AVATAR.body.height - scaledBodyHeight.value);
+    return normalY - bodyOffset.value + scaleOffset;
   });
 
   const armY = useDerivedValue(() => {
-    return bodyTopY.value + (AVATAR.body.height / 2);
+    return bodyTopY.value + (scaledBodyHeight.value / 2);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // FACE DIMENSIONS
+  // ═══════════════════════════════════════════════════════════
+  const scaledFaceWidth = useDerivedValue(() => {
+    return (AVATAR.body.width - AVATAR.face.paddingX * 2) * scaleX.value;
+  });
+
+  const scaledFaceHeight = useDerivedValue(() => {
+    return AVATAR.face.height * scaleY.value;
+  });
+
+  const faceX = useDerivedValue(() => {
+    return bodyX.value - scaledFaceWidth.value / 2;
   });
 
   const faceY = useDerivedValue(() => {
-    return bodyTopY.value + AVATAR.face.paddingY;
+    return bodyTopY.value + AVATAR.face.paddingY * scaleY.value;
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // EYE POSITIONS
+  // ═══════════════════════════════════════════════════════════
+  const eyeSpacingScaled = useDerivedValue(() => AVATAR.face.eyeSpacing * scaleX.value);
+
   const eyeY = useDerivedValue(() => {
-    return bodyTopY.value + AVATAR.face.paddingY + AVATAR.face.eyeOffsetY;
+    return bodyTopY.value + (AVATAR.face.paddingY + AVATAR.face.eyeOffsetY) * scaleY.value;
+  });
+
+  const eyeHeight = useDerivedValue(() => {
+    return AVATAR.face.eyeRadius * 2 * eyeScaleY.value * scaleY.value;
+  });
+
+  const eyeWidth = useDerivedValue(() => AVATAR.face.eyeRadius * 2 * scaleX.value);
+
+  const leftEyeX = useDerivedValue(() => bodyX.value - eyeSpacingScaled.value - eyeWidth.value / 2);
+  const rightEyeX = useDerivedValue(() => bodyX.value + eyeSpacingScaled.value - eyeWidth.value / 2);
+  const eyeRectY = useDerivedValue(() => eyeY.value - eyeHeight.value / 2);
+
+  // ═══════════════════════════════════════════════════════════
+  // NAME PLATE
+  // ═══════════════════════════════════════════════════════════
+  const scaledNamePlateWidth = useDerivedValue(() => {
+    return (AVATAR.body.width - AVATAR.namePlate.paddingX * 2) * scaleX.value;
+  });
+
+  const namePlateX = useDerivedValue(() => {
+    return bodyX.value - scaledNamePlateWidth.value / 2;
   });
 
   const namePlateY = useDerivedValue(() => {
@@ -374,55 +462,71 @@ const PlayerFigure = ({
     return normalY - bodyOffset.value;
   });
 
-  const nameTextY = useDerivedValue(() => {
-    return namePlateY.value + 9;
-  });
+  const nameTextY = useDerivedValue(() => namePlateY.value + 9);
 
+  // ═══════════════════════════════════════════════════════════
+  // LEG TOP
+  // ═══════════════════════════════════════════════════════════
   const legTopY = useDerivedValue(() => {
-    return y - AVATAR.leg.height - bodyOffset.value;
+    return bodyTopY.value + scaledBodyHeight.value;
   });
 
   // ═══════════════════════════════════════════════════════════
   // ARM ANGLES
   // ═══════════════════════════════════════════════════════════
   const jumpArmRaise = useDerivedValue(() => {
-    if (jumpProgress.value > 0) {
-      return jumpProgress.value * ANIMATION.jumping.armRaise;
-    }
+    if (jumpProgress.value > 0) return jumpProgress.value * ANIMATION.jumping.armRaise;
     return 0;
   });
 
   const leftArmAngle = useDerivedValue(() => {
-    if (isDancing) {
-      return danceLeftArmAngle.value;
+    if (isClapping) {
+      return clapAngle.value;
     }
+
+    if (isDancing) return danceLeftArmAngle.value;
+
+    const armSwing = isRunning
+      ? ANIMATION.running.armSwing
+      : ANIMATION.walking.armSwing;
+
     const walkSwing = interpolate(
       walkProgress.value,
       [0, 0.5, 1],
-      [ANIMATION.walking.armSwing, 0, -ANIMATION.walking.armSwing]
+      [armSwing, 0, -armSwing]
     );
     return walkSwing + jumpArmRaise.value;
   });
 
   const rightArmAngle = useDerivedValue(() => {
-    if (isWaving) {
-      return waveAngle.value;
+    if (isClapping) {
+      return clapAngle.value;
     }
-    if (isDancing) {
-      return danceRightArmAngle.value;
-    }
+
+    if (isWaving) return waveAngle.value;
+    if (isDancing) return danceRightArmAngle.value;
+
+    const armSwing = isRunning
+      ? ANIMATION.running.armSwing
+      : ANIMATION.walking.armSwing;
+
     const walkSwing = interpolate(
       walkProgress.value,
       [0, 0.5, 1],
-      [-ANIMATION.walking.armSwing, 0, ANIMATION.walking.armSwing]
+      [-armSwing, 0, armSwing]
     );
     return walkSwing + jumpArmRaise.value;
   });
 
   // ═══════════════════════════════════════════════════════════
-  // LEG ANGLES
+  // LEG ANGLES (with jump tuck)
   // ═══════════════════════════════════════════════════════════
   const leftLegAngle = useDerivedValue(() => {
+    if (jumpProgress.value > 0) {
+      const tuckAmount = jumpProgress.value * ANIMATION.jumping.legTuck;
+      return tuckAmount;
+    }
+
     if (isDancing) {
       return interpolate(
         danceProgress.value,
@@ -430,114 +534,211 @@ const PlayerFigure = ({
         [-ANIMATION.dancing.legBend, ANIMATION.dancing.legBend, -ANIMATION.dancing.legBend]
       );
     }
+
+    const legSwing = isRunning
+      ? ANIMATION.running.legSwing
+      : ANIMATION.walking.legSwing;
+
     return interpolate(
       walkProgress.value,
       [0, 0.5, 1],
-      [-ANIMATION.walking.legSwing, 0, ANIMATION.walking.legSwing]
+      [-legSwing, 0, legSwing]
     );
   });
 
   const rightLegAngle = useDerivedValue(() => {
+    if (jumpProgress.value > 0) {
+      const tuckAmount = jumpProgress.value * ANIMATION.jumping.legTuck;
+      return -tuckAmount;
+    }
+
     return -leftLegAngle.value;
   });
 
   // ═══════════════════════════════════════════════════════════
-  // STATIC POSITIONS
+  // STATIC LEG X POSITIONS
   // ═══════════════════════════════════════════════════════════
   const leftLegX = x - AVATAR.leg.spacing;
   const rightLegX = x + AVATAR.leg.spacing;
 
   // ═══════════════════════════════════════════════════════════
-  // ARM POINTS
+  // ARM POINTS (with clap support)
   // ═══════════════════════════════════════════════════════════
   const leftArmStart = useDerivedValue(() => vec(bodyLeftX.value, armY.value));
+
   const leftArmEnd = useDerivedValue(() => {
     const angleRad = leftArmAngle.value * DEG_TO_RAD;
-    const endX = bodyLeftX.value - Math.cos(angleRad) * AVATAR.arm.length;
-    const endY = armY.value - Math.sin(angleRad) * AVATAR.arm.length + AVATAR.arm.dropY;
+
+    let endX = bodyLeftX.value - Math.cos(angleRad) * AVATAR.arm.length;
+    let endY = armY.value - Math.sin(angleRad) * AVATAR.arm.length + AVATAR.arm.dropY;
+
+    if (isClapping && clapArmRaise.value > 0) {
+      const clapOffset = clapTogether.value * (AVATAR.body.width / 2 - ANIMATION.clapping.clapDistance);
+      endX = endX + clapOffset;
+      endY = armY.value - AVATAR.arm.length * 0.7;
+    }
+
     return vec(endX, endY);
   });
+
   const leftHandX = useDerivedValue(() => {
     const angleRad = leftArmAngle.value * DEG_TO_RAD;
-    return bodyLeftX.value - Math.cos(angleRad) * AVATAR.arm.length;
+    let handX = bodyLeftX.value - Math.cos(angleRad) * AVATAR.arm.length;
+
+    if (isClapping && clapArmRaise.value > 0) {
+      const clapOffset = clapTogether.value * (AVATAR.body.width / 2 - ANIMATION.clapping.clapDistance);
+      handX = handX + clapOffset;
+    }
+
+    return handX;
   });
+
   const leftHandY = useDerivedValue(() => {
     const angleRad = leftArmAngle.value * DEG_TO_RAD;
+
+    if (isClapping && clapArmRaise.value > 0) {
+      return armY.value - AVATAR.arm.length * 0.7;
+    }
+
     return armY.value - Math.sin(angleRad) * AVATAR.arm.length + AVATAR.arm.dropY;
   });
 
   const rightArmStart = useDerivedValue(() => vec(bodyRightX.value, armY.value));
+
   const rightArmEnd = useDerivedValue(() => {
     const angleRad = rightArmAngle.value * DEG_TO_RAD;
-    const endX = bodyRightX.value + Math.cos(angleRad) * AVATAR.arm.length;
-    const endY = armY.value - Math.sin(angleRad) * AVATAR.arm.length + AVATAR.arm.dropY;
+
+    let endX = bodyRightX.value + Math.cos(angleRad) * AVATAR.arm.length;
+    let endY = armY.value - Math.sin(angleRad) * AVATAR.arm.length + AVATAR.arm.dropY;
+
+    if (isClapping && clapArmRaise.value > 0) {
+      const clapOffset = clapTogether.value * (AVATAR.body.width / 2 - ANIMATION.clapping.clapDistance);
+      endX = endX - clapOffset;
+      endY = armY.value - AVATAR.arm.length * 0.7;
+    }
+
     return vec(endX, endY);
   });
+
   const rightHandX = useDerivedValue(() => {
     const angleRad = rightArmAngle.value * DEG_TO_RAD;
-    return bodyRightX.value + Math.cos(angleRad) * AVATAR.arm.length;
+    let handX = bodyRightX.value + Math.cos(angleRad) * AVATAR.arm.length;
+
+    if (isClapping && clapArmRaise.value > 0) {
+      const clapOffset = clapTogether.value * (AVATAR.body.width / 2 - ANIMATION.clapping.clapDistance);
+      handX = handX - clapOffset;
+    }
+
+    return handX;
   });
+
   const rightHandY = useDerivedValue(() => {
     const angleRad = rightArmAngle.value * DEG_TO_RAD;
+
+    if (isClapping && clapArmRaise.value > 0) {
+      return armY.value - AVATAR.arm.length * 0.7;
+    }
+
     return armY.value - Math.sin(angleRad) * AVATAR.arm.length + AVATAR.arm.dropY;
   });
 
   // ═══════════════════════════════════════════════════════════
-  // FOOT Y
+  // FOOT Y (for ground-based movement)
   // ═══════════════════════════════════════════════════════════
-  const footY = useDerivedValue(() => {
-    if (jumpProgress.value > 0) {
-      return y - jumpOffset.value;
-    }
-    return y;
-  });
+  const footY = useDerivedValue(() => y);
 
   // ═══════════════════════════════════════════════════════════
-  // LEG POINTS
+  // LEG POINTS (with jump handling)
   // ═══════════════════════════════════════════════════════════
-  const leftLegStartX = useDerivedValue(() => leftLegX + bodyXOffset.value);
+  const legSpacingScaled = useDerivedValue(() => AVATAR.leg.spacing * scaleX.value);
+
+  const leftLegStartX = useDerivedValue(() => bodyX.value - legSpacingScaled.value + bodyXOffset.value);
   const leftLegStart = useDerivedValue(() => vec(leftLegStartX.value, legTopY.value));
+
   const leftLegEnd = useDerivedValue(() => {
     const angleRad = leftLegAngle.value * DEG_TO_RAD;
-    const footXOffset = Math.sin(angleRad) * AVATAR.leg.height;
-    const footYOffset = Math.abs(Math.sin(angleRad)) * ANIMATION.walking.footLift;
-    return vec(leftLegX + footXOffset, footY.value - footYOffset);
+    const footLift = isRunning
+      ? ANIMATION.running.footLift
+      : ANIMATION.walking.footLift;
+
+    if (jumpProgress.value > 0) {
+      const legEndX = leftLegStartX.value + Math.sin(angleRad) * AVATAR.leg.height;
+      const legEndY = legTopY.value + Math.cos(angleRad) * AVATAR.leg.height;
+      return vec(legEndX, legEndY);
+    }
+
+    return vec(
+      leftLegX + Math.sin(angleRad) * AVATAR.leg.height,
+      footY.value - Math.abs(Math.sin(angleRad)) * footLift
+    );
   });
+
   const leftFootX = useDerivedValue(() => {
     const angleRad = leftLegAngle.value * DEG_TO_RAD;
+
+    if (jumpProgress.value > 0) {
+      return leftLegStartX.value + Math.sin(angleRad) * AVATAR.leg.height;
+    }
+
     return leftLegX + Math.sin(angleRad) * AVATAR.leg.height;
   });
+
   const leftFootY = useDerivedValue(() => {
     const angleRad = leftLegAngle.value * DEG_TO_RAD;
-    return footY.value - Math.abs(Math.sin(angleRad)) * ANIMATION.walking.footLift;
+    const footLift = isRunning
+      ? ANIMATION.running.footLift
+      : ANIMATION.walking.footLift;
+
+    if (jumpProgress.value > 0) {
+      return legTopY.value + Math.cos(angleRad) * AVATAR.leg.height;
+    }
+
+    return footY.value - Math.abs(Math.sin(angleRad)) * footLift;
   });
 
-  const rightLegStartX = useDerivedValue(() => rightLegX + bodyXOffset.value);
+  const rightLegStartX = useDerivedValue(() => bodyX.value + legSpacingScaled.value + bodyXOffset.value);
   const rightLegStart = useDerivedValue(() => vec(rightLegStartX.value, legTopY.value));
+
   const rightLegEnd = useDerivedValue(() => {
     const angleRad = rightLegAngle.value * DEG_TO_RAD;
-    const footXOffset = Math.sin(angleRad) * AVATAR.leg.height;
-    const footYOffset = Math.abs(Math.sin(angleRad)) * ANIMATION.walking.footLift;
-    return vec(rightLegX + footXOffset, footY.value - footYOffset);
+    const footLift = isRunning
+      ? ANIMATION.running.footLift
+      : ANIMATION.walking.footLift;
+
+    if (jumpProgress.value > 0) {
+      const legEndX = rightLegStartX.value + Math.sin(angleRad) * AVATAR.leg.height;
+      const legEndY = legTopY.value + Math.cos(angleRad) * AVATAR.leg.height;
+      return vec(legEndX, legEndY);
+    }
+
+    return vec(
+      rightLegX + Math.sin(angleRad) * AVATAR.leg.height,
+      footY.value - Math.abs(Math.sin(angleRad)) * footLift
+    );
   });
+
   const rightFootX = useDerivedValue(() => {
     const angleRad = rightLegAngle.value * DEG_TO_RAD;
+
+    if (jumpProgress.value > 0) {
+      return rightLegStartX.value + Math.sin(angleRad) * AVATAR.leg.height;
+    }
+
     return rightLegX + Math.sin(angleRad) * AVATAR.leg.height;
   });
+
   const rightFootY = useDerivedValue(() => {
     const angleRad = rightLegAngle.value * DEG_TO_RAD;
-    return footY.value - Math.abs(Math.sin(angleRad)) * ANIMATION.walking.footLift;
-  });
+    const footLift = isRunning
+      ? ANIMATION.running.footLift
+      : ANIMATION.walking.footLift;
 
-  // ═══════════════════════════════════════════════════════════
-  // EYE DIMENSIONS (for blink) (NEW!)
-  // ═══════════════════════════════════════════════════════════
-  const eyeHeight = useDerivedValue(() => {
-    // When blinking, eye becomes a thin line
-    return AVATAR.face.eyeRadius * 2 * eyeScaleY.value;
-  });
+    if (jumpProgress.value > 0) {
+      return legTopY.value + Math.cos(angleRad) * AVATAR.leg.height;
+    }
 
-  const eyeWidth = AVATAR.face.eyeRadius * 2;
+    return footY.value - Math.abs(Math.sin(angleRad)) * footLift;
+  });
 
   // ═══════════════════════════════════════════════════════════
   // NAME TEXT
@@ -569,19 +770,14 @@ const PlayerFigure = ({
   // ═══════════════════════════════════════════════════════════
   const { body, arm, leg, face, namePlate, colors } = AVATAR;
 
-  // Eye positions for RoundedRect (top-left corner)
-  const leftEyeX = useDerivedValue(() => bodyX.value - face.eyeSpacing - face.eyeRadius);
-  const rightEyeX = useDerivedValue(() => bodyX.value + face.eyeSpacing - face.eyeRadius);
-  const eyeRectY = useDerivedValue(() => eyeY.value - eyeHeight.value / 2);
-
   return (
     <Group>
       {/* BODY */}
       <RoundedRect
         x={bodyLeftX}
         y={bodyTopY}
-        width={body.width}
-        height={body.height}
+        width={scaledBodyWidth}
+        height={scaledBodyHeight}
         r={body.radius}
         color={color}
       />
@@ -596,17 +792,16 @@ const PlayerFigure = ({
 
       {/* FACE PANEL */}
       <RoundedRect
-        x={useDerivedValue(() => bodyLeftX.value + face.paddingX)}
+        x={faceX}
         y={faceY}
-        width={body.width - (face.paddingX * 2)}
-        height={face.height}
+        width={scaledFaceWidth}
+        height={scaledFaceHeight}
         r={face.radius}
         color={colors.face}
         opacity={colors.faceOpacity}
       />
 
-      {/* EYES (NOW WITH BLINK!) */}
-      {/* Using RoundedRect for eyes so they can squish vertically */}
+      {/* EYES */}
       <RoundedRect
         x={leftEyeX}
         y={eyeRectY}
@@ -626,9 +821,9 @@ const PlayerFigure = ({
 
       {/* NAME PLATE */}
       <RoundedRect
-        x={useDerivedValue(() => bodyLeftX.value + namePlate.paddingX)}
+        x={namePlateX}
         y={namePlateY}
-        width={body.width - (namePlate.paddingX * 2)}
+        width={scaledNamePlateWidth}
         height={namePlate.height}
         r={namePlate.radius}
         color={colors.namePlate}
