@@ -5,35 +5,80 @@ import PlayerFigure from '../components/PlayerFigure';
 
 const DummyScreen = () => {
   const [isWalking, setIsWalking] = useState(false);
+  const [isJumping, setIsJumping] = useState(false);
+  const [isDancing, setIsDancing] = useState(false);
+  const [isWaving, setIsWaving] = useState(false);
+
+  const handleJump = () => {
+    if (!isJumping) {
+      setIsJumping(true);
+      setTimeout(() => setIsJumping(false), 600);
+    }
+  };
+
+  const handleWave = () => {
+    if (!isWaving) {
+      setIsWaving(true);
+      // Auto-stop after waves complete (3 waves * 400ms + raise/lower time)
+      setTimeout(() => setIsWaving(false), 1500);
+    }
+  };
+
+  const clearOtherAnimations = (except) => {
+    if (except !== 'walk') setIsWalking(false);
+    if (except !== 'dance') setIsDancing(false);
+  };
 
   return (
     <View style={styles.container}>
-      {/* Toggle Button */}
-      <TouchableOpacity 
-        style={[styles.button, isWalking && styles.buttonActive]}
-        onPress={() => setIsWalking(!isWalking)}
-      >
-        <Text style={styles.buttonText}>
-          {isWalking ? '🚶 Walking...' : '🧍 Idle (Tap to Walk)'}
-        </Text>
-      </TouchableOpacity>
+      {/* Buttons */}
+      <View style={styles.buttonRow}>
+        <TouchableOpacity 
+          style={[styles.button, isWalking && styles.buttonActive]}
+          onPress={() => { 
+            clearOtherAnimations('walk');
+            setIsWalking(!isWalking); 
+          }}
+        >
+          <Text style={styles.buttonText}>🚶</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.jumpButton]}
+          onPress={handleJump}
+        >
+          <Text style={styles.buttonText}>🦘</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.danceButton, isDancing && styles.buttonActive]}
+          onPress={() => { 
+            clearOtherAnimations('dance');
+            setIsDancing(!isDancing); 
+          }}
+        >
+          <Text style={styles.buttonText}>💃</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.waveButton, isWaving && styles.buttonActive]}
+          onPress={handleWave}
+        >
+          <Text style={styles.buttonText}>👋</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Skia Canvas */}
       <Canvas style={styles.canvas}>
         <PlayerFigure 
-          x={150}
-          y={350}
+          x={200}
+          y={400}
           playerName="Alex" 
           color="#4A90E2"
           isWalking={isWalking}
-        />
-
-        <PlayerFigure 
-          x={250} 
-          y={350} 
-          playerName="Sam" 
-          color="#E94B3C"
-          isWalking={!isWalking}  // Opposite state for fun!
+          isJumping={isJumping}
+          isDancing={isDancing}
+          isWaving={isWaving}
         />
       </Canvas>
     </View>
@@ -48,20 +93,33 @@ const styles = StyleSheet.create({
   canvas: {
     flex: 1,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 15,
+    padding: 20,
+  },
   button: {
     backgroundColor: '#4A90E2',
     padding: 15,
-    margin: 20,
     borderRadius: 10,
     alignItems: 'center',
+    minWidth: 60,
+  },
+  jumpButton: {
+    backgroundColor: '#9B59B6',
+  },
+  danceButton: {
+    backgroundColor: '#E67E22',
+  },
+  waveButton: {
+    backgroundColor: '#27AE60',
   },
   buttonActive: {
     backgroundColor: '#E94B3C',
   },
   buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 24,
   },
 });
 
