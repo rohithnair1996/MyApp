@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Canvas } from '@shopify/react-native-skia';
+import { Canvas, useImage } from '@shopify/react-native-skia';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import PlayerFigure from '../components/PlayerFigure';
 
@@ -10,6 +10,12 @@ const DummyScreen = () => {
   const [isDancing, setIsDancing] = useState(false);
   const [isWaving, setIsWaving] = useState(false);
   const [isClapping, setIsClapping] = useState(false);
+  const [isSad, setIsSad] = useState(false);
+  const [isAngry, setIsAngry] = useState(false);
+  const [isRomance, setIsRomance] = useState(false);
+
+  // Load face image
+  const faceImage = useImage(require('../assets/a1.png'));
 
   const handleJump = () => {
     if (!isJumping) {
@@ -28,7 +34,6 @@ const DummyScreen = () => {
   const handleClap = () => {
     if (!isClapping) {
       setIsClapping(true);
-      // Auto-stop after claps complete (4 claps * 300ms + raise/lower time)
       setTimeout(() => setIsClapping(false), 1500);
     }
   };
@@ -39,9 +44,15 @@ const DummyScreen = () => {
     setIsDancing(false);
   };
 
+  const clearEmotions = () => {
+    setIsSad(false);
+    setIsAngry(false);
+    setIsRomance(false);
+  };
+
   return (
     <View style={styles.container}>
-      {/* Buttons Row 1 */}
+      {/* Buttons Row 1 - Movement */}
       <View style={styles.buttonRow}>
         <TouchableOpacity 
           style={[styles.button, isWalking && styles.buttonActive]}
@@ -72,7 +83,7 @@ const DummyScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Buttons Row 2 */}
+      {/* Buttons Row 2 - Actions */}
       <View style={styles.buttonRow}>
         <TouchableOpacity 
           style={[styles.button, styles.waveButton, isWaving && styles.buttonActive]}
@@ -89,6 +100,30 @@ const DummyScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Buttons Row 3 - Emotions */}
+      <View style={styles.buttonRow}>
+        <TouchableOpacity 
+          style={[styles.button, styles.sadButton, isSad && styles.buttonActive]}
+          onPress={() => { clearEmotions(); setIsSad(!isSad); }}
+        >
+          <Text style={styles.buttonText}>😢</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.angryButton, isAngry && styles.buttonActive]}
+          onPress={() => { clearEmotions(); setIsAngry(!isAngry); }}
+        >
+          <Text style={styles.buttonText}>😠</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.romanceButton, isRomance && styles.buttonActive]}
+          onPress={() => { clearEmotions(); setIsRomance(!isRomance); }}
+        >
+          <Text style={styles.buttonText}>🥰</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Skia Canvas */}
       <Canvas style={styles.canvas}>
         <PlayerFigure 
@@ -96,12 +131,16 @@ const DummyScreen = () => {
           y={400}
           playerName="Alex" 
           color="#4A90E2"
+          faceImage={faceImage}  
           isWalking={isWalking}
           isRunning={isRunning}
           isJumping={isJumping}
           isDancing={isDancing}
           isWaving={isWaving}
           isClapping={isClapping}
+          isSad={isSad}
+          isAngry={isAngry}
+          isRomance={isRomance}
         />
       </Canvas>
     </View>
@@ -121,14 +160,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   button: {
     backgroundColor: '#4A90E2',
-    padding: 15,
+    padding: 12,
     borderRadius: 10,
     alignItems: 'center',
-    minWidth: 55,
+    minWidth: 50,
   },
   runButton: {
     backgroundColor: '#E74C3C',
@@ -145,11 +184,20 @@ const styles = StyleSheet.create({
   clapButton: {
     backgroundColor: '#3498DB',
   },
+  sadButton: {
+    backgroundColor: '#5DADE2',
+  },
+  angryButton: {
+    backgroundColor: '#C0392B',
+  },
+  romanceButton: {
+    backgroundColor: '#FF69B4',
+  },
   buttonActive: {
     backgroundColor: '#2C3E50',
   },
   buttonText: {
-    fontSize: 24,
+    fontSize: 22,
   },
 });
 
