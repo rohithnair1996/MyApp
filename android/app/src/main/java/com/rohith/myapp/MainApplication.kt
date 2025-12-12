@@ -1,4 +1,4 @@
-package com.myapp
+package com.rohith.myapp
 
 import android.app.Application
 import com.facebook.react.PackageList

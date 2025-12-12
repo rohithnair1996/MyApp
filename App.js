@@ -17,8 +17,8 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Dummy">
           <Stack.Screen
-            name="Dummy"
-            component={DummyScreen}
+            name="Landing"
+            component={LandingScreen}
             options={{
               headerShown: false,
               statusBarColor: '#000000',
@@ -26,8 +26,8 @@ export default function App() {
             }}
           />
           <Stack.Screen
-            name="Landing"
-            component={LandingScreen}
+            name="Dummy"
+            component={DummyScreen}
             options={{
               headerShown: false,
               statusBarColor: '#000000',
