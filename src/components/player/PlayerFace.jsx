@@ -61,7 +61,7 @@ const PlayerFace = ({
             />
 
             {/* FACE IMAGE OVERLAY */}
-            {false && face && faceImage && (
+            {face && faceImage && (
                 <Image
                     image={faceImage}
                     x={faceX}
