@@ -1,9 +1,13 @@
 import { Canvas, useImage } from '@shopify/react-native-skia';
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import PlayerFigure from '../components/PlayerFigure';
+import { ANIMATION } from '../constants/playerConstants';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { styles } from '../styles/DummyScreenStyles';
+
+// Static array moved outside component to prevent recreation
+const SPEECH_PHRASES = ['Nice to meet you! mee evide aada kuttaaaappi'];
 
 const DummyScreen = () => {
   const {
@@ -29,6 +33,39 @@ const DummyScreen = () => {
 
   // Load face image
   const faceImage = useImage(require('../assets/a1.png'));
+
+  // Speech bubble state with auto-disappear
+  const [speechText, setSpeechText] = useState(null);
+  const [speechIndex, setSpeechIndex] = useState(0);
+  const speechTimerRef = useRef(null);
+
+  const showSpeech = useCallback(() => {
+    // Clear any existing timer
+    if (speechTimerRef.current) {
+      clearTimeout(speechTimerRef.current);
+    }
+
+    // Set the speech text
+    setSpeechIndex((prev) => {
+      const newText = SPEECH_PHRASES[prev];
+      setSpeechText(newText);
+      return (prev + 1) % SPEECH_PHRASES.length;
+    });
+
+    // Auto-disappear after duration
+    speechTimerRef.current = setTimeout(() => {
+      setSpeechText(null);
+    }, ANIMATION.speechBubble.displayDuration);
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (speechTimerRef.current) {
+        clearTimeout(speechTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -104,6 +141,16 @@ const DummyScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Buttons Row 4 - Speech */}
+      <View style={styles.buttonRow}>
+        <TouchableOpacity
+          style={[styles.button, styles.speechButton, speechText && styles.buttonActive]}
+          onPress={showSpeech}
+        >
+          <Text style={styles.buttonText}>💬</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Skia Canvas */}
       <Canvas style={styles.canvas}>
         <PlayerFigure
@@ -112,6 +159,7 @@ const DummyScreen = () => {
           playerName="Alex"
           color="#4A90E2"
           faceImage={faceImage}
+          speechText={speechText}
           isWalking={isWalking}
           isRunning={isRunning}
           isJumping={isJumping}

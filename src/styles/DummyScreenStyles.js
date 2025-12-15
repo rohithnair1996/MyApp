@@ -46,6 +46,9 @@ export const styles = StyleSheet.create({
     romanceButton: {
         backgroundColor: '#FF69B4',
     },
+    speechButton: {
+        backgroundColor: '#8E44AD',
+    },
     buttonActive: {
         backgroundColor: '#2C3E50',
     },

@@ -112,4 +112,21 @@ export const ANIMATION = {
         riseHeight: 120,      // Rise a bit higher
         colors: ['#FF69B4', '#FF4458', '#FFB6C1', '#FF7F7F', '#FF1493', '#E91E63'],
     },
+    speechBubble: {
+        backgroundColor: '#FFFFFF',
+        borderColor: '#333333',
+        borderWidth: 2,
+        borderRadius: 10,
+        textColor: '#333333',
+        fontSize: 12,
+        lineHeight: 16,
+        paddingX: 10,
+        paddingY: 8,
+        pointerWidth: 12,
+        pointerHeight: 8,
+        offsetY: 15,
+        maxWidth: 150,
+        minWidth: 40,
+        displayDuration: 2500,
+    },
 };

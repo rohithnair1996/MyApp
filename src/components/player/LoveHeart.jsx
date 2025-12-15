@@ -1,10 +1,22 @@
 import { Path } from '@shopify/react-native-skia';
-import React from 'react';
-import { useDerivedValue } from 'react-native-reanimated';
+import React, { useEffect } from 'react';
+import { useDerivedValue, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
 import { ANIMATION } from '../../constants/playerConstants';
 
-const LoveHeart = ({ baseX, baseY, progress, color, seed }) => {
-    const { minSize, maxSize, horizontalDrift, riseHeight } = ANIMATION.romance;
+const LoveHeart = ({ baseX, baseY, color, seed }) => {
+    const { minSize, maxSize, horizontalDrift, riseHeight, riseDuration } = ANIMATION.romance;
+
+    // Each heart has its own progress shared value
+    const progress = useSharedValue(0);
+
+    useEffect(() => {
+        // Start animation when heart mounts
+        progress.value = 0;
+        progress.value = withTiming(1, {
+            duration: riseDuration,
+            easing: Easing.out(Easing.quad),
+        });
+    }, []);
 
     // Horizontal drift using sine wave
     const heartX = useDerivedValue(() => {
@@ -13,7 +25,7 @@ const LoveHeart = ({ baseX, baseY, progress, color, seed }) => {
         return baseX + drift + offsetX;
     });
 
-    // Rise up from name plate
+    // Rise up from spawn point
     const heartY = useDerivedValue(() => {
         return baseY - progress.value * riseHeight;
     });

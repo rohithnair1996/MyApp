@@ -41,7 +41,6 @@ export const usePlayerAnimations = ({
         showTear,
         angryProgress,
         angryShake,
-        heartProgressValues,
     } = sharedValues;
 
     const [hearts, setHearts] = useState([]);
@@ -77,56 +76,38 @@ export const usePlayerAnimations = ({
     }, []);
 
     // ═══════════════════════════════════════════════════════════
-    // ROMANCE ANIMATION
+    // ROMANCE ANIMATION - Simple state-based heart management
+    // Each heart manages its own animation internally
     // ═══════════════════════════════════════════════════════════
     useEffect(() => {
         if (isRomance) {
-            const { bubbleCount, riseDuration, spawnInterval, colors } = ANIMATION.romance;
-            let heartIndex = 0;
+            const { spawnInterval, colors } = ANIMATION.romance;
 
             const spawnHeart = () => {
-                const currentIndex = heartIndex % bubbleCount;
-                const seed = Math.random();
-                const colorIndex = Math.floor(Math.random() * colors.length);
+                const newHeart = {
+                    id: Date.now() + Math.random(),
+                    seed: Math.random(),
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    startTime: Date.now(),
+                };
 
-                // Update hearts state
-                setHearts(prev => {
-                    const newHearts = [...prev];
-                    newHearts[currentIndex] = {
-                        id: Date.now() + currentIndex,
-                        seed: seed,
-                        color: colors[colorIndex],
-                    };
-                    return newHearts;
-                });
-
-                // Animate this heart
-                heartProgressValues[currentIndex].value = 0;
-                heartProgressValues[currentIndex].value = withTiming(1, {
-                    duration: riseDuration,
-                    easing: Easing.out(Easing.quad),
-                });
-
-                heartIndex++;
+                // Keep max 12 hearts to prevent memory issues
+                setHearts(prev => [...prev.slice(-11), newHeart]);
             };
 
-            // Spawn initial batch
-            for (let i = 0; i < 5; i++) {
-                setTimeout(() => spawnHeart(), i * 100);
-            }
+            // Spawn initial heart
+            spawnHeart();
 
-            // Continue spawning
+            // Continue spawning hearts at interval
             const intervalId = setInterval(spawnHeart, spawnInterval);
 
             return () => {
                 clearInterval(intervalId);
+                setHearts([]);
             };
         } else {
             // Clear hearts when romance ends
             setHearts([]);
-            heartProgressValues.forEach(progress => {
-                progress.value = 0;
-            });
         }
     }, [isRomance]);
 
