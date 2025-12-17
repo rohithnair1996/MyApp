@@ -15,7 +15,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Dummy">
+        <Stack.Navigator initialRouteName="Landing">
           <Stack.Screen
             name="Landing"
             component={LandingScreen}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,70 +6,144 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  ImageBackground,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { authFetch } from '../config/api';
 
 const SpacesScreen = ({ navigation }) => {
-  const rooms = [
-    {
-      id: '1',
-      name: 'Virtual Room',
-      subtitle: 'The main party hub',
-      icon: 'rocket',
-      active: true,
-      members: 12,
-    },
-    {
-      id: '2',
-      name: 'Chill Lounge',
-      subtitle: 'Relax and unwind',
-      icon: 'coffee',
-      active: false,
-      members: 8,
-    },
-    {
-      id: '3',
-      name: 'Dance Bay',
-      subtitle: 'Move to the rhythm',
-      icon: 'music',
-      active: false,
-      members: 24,
-    },
-    {
-      id: '4',
-      name: 'Audio Circle',
-      subtitle: 'Voice-only vibes',
-      icon: 'headphones',
-      active: false,
-      members: 6,
-    },
-    {
-      id: '5',
-      name: 'Afterglow',
-      subtitle: 'Late night talks',
-      icon: 'moon',
-      active: false,
-      members: 4,
-    },
-  ];
+  const [publicSpaces, setPublicSpaces] = useState([]);
+  const [privateSpaces, setPrivateSpaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleRoomPress = (room) => {
-    if (room.active) {
-      navigation.navigate('Floor');
+  const fetchSpaces = async () => {
+    try {
+      setError(null);
+      const response = await authFetch('/spaces');
+      const data = await response.json();
+
+      if (data.success) {
+        setPublicSpaces(data.publicSpaces || []);
+        setPrivateSpaces(data.privateSpaces || []);
+      } else {
+        setError(data.error || 'Failed to fetch spaces');
+      }
+    } catch (err) {
+      console.error('Error fetching spaces:', err);
+      setError('Network error. Please check your connection.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const getIconComponent = (iconName) => {
-    const iconMap = {
-      rocket: 'rocket-launch',
-      coffee: 'coffee',
-      music: 'music-note',
-      headphones: 'headset',
-      moon: 'moon',
-    };
-    return iconMap[iconName] || 'star';
+  useEffect(() => {
+    fetchSpaces();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchSpaces();
   };
+
+  const handleSpacePress = (space) => {
+    navigation.navigate('Floor', { spaceId: space.id, spaceName: space.name });
+  };
+
+  const getSpaceIcon = (spaceName) => {
+    const name = spaceName.toLowerCase();
+    if (name.includes('lobby') || name.includes('main')) return 'business';
+    if (name.includes('cafe') || name.includes('coffee')) return 'cafe';
+    if (name.includes('park') || name.includes('garden')) return 'leaf';
+    if (name.includes('beach') || name.includes('ocean')) return 'sunny';
+    if (name.includes('office') || name.includes('work')) return 'briefcase';
+    if (name.includes('lounge') || name.includes('chill')) return 'wine';
+    if (name.includes('music') || name.includes('dance')) return 'musical-notes';
+    return 'globe';
+  };
+
+  const renderSpaceCard = (space, isPrivate = false) => (
+    <TouchableOpacity
+      key={space.id}
+      activeOpacity={0.7}
+      onPress={() => handleSpacePress(space)}
+      style={styles.roomCard}
+    >
+      <ImageBackground
+        source={{ uri: space.backgroundImage }}
+        style={styles.cardBackground}
+        imageStyle={styles.cardBackgroundImage}
+      >
+        <View style={styles.cardOverlay}>
+          <View style={styles.cardContent}>
+            <View style={styles.cardLeft}>
+              <View style={styles.iconContainer}>
+                <Ionicons
+                  name={getSpaceIcon(space.name)}
+                  size={28}
+                  color="#FFFFFF"
+                />
+              </View>
+              <View style={styles.cardText}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.roomName}>{space.name}</Text>
+                  {isPrivate && (
+                    <View style={styles.privateBadge}>
+                      <Ionicons name="lock-closed" size={12} color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.roomSubtitle}>
+                  {space.currentPeopleCount > 0
+                    ? `${space.currentPeopleCount} ${space.currentPeopleCount === 1 ? 'person' : 'people'} here`
+                    : 'No one here yet'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.cardRight}>
+              <View style={styles.membersBadge}>
+                <MaterialCommunityIcons
+                  name="account-group"
+                  size={16}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.membersText}>{space.currentPeopleCount}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+            </View>
+          </View>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <ActivityIndicator size="large" color="#FFFFFF" />
+        <Text style={styles.loadingText}>Loading spaces...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <Ionicons name="cloud-offline" size={64} color="#666666" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchSpaces}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -125,68 +199,47 @@ const SpacesScreen = ({ navigation }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#FFFFFF"
+            colors={['#FFFFFF']}
+          />
+        }
       >
-        {rooms.map((room) => (
-          <TouchableOpacity
-            key={room.id}
-            activeOpacity={room.active ? 0.7 : 0.95}
-            onPress={() => handleRoomPress(room)}
-            style={[
-              styles.roomCard,
-              !room.active && styles.roomCardDisabled,
-            ]}
-          >
-            <View style={styles.cardContent}>
-              <View style={styles.cardLeft}>
-                <View style={[
-                  styles.iconContainer,
-                  room.active && styles.iconContainerActive,
-                ]}>
-                  <Ionicons
-                    name={getIconComponent(room.icon)}
-                    size={32}
-                    color={room.active ? '#000000' : '#666666'}
-                  />
-                </View>
-                <View style={styles.cardText}>
-                  <Text style={[
-                    styles.roomName,
-                    !room.active && styles.roomNameDisabled,
-                  ]}>
-                    {room.name}
-                  </Text>
-                  <Text style={styles.roomSubtitle}>{room.subtitle}</Text>
-                </View>
-              </View>
-              <View style={styles.cardRight}>
-                <View style={styles.membersBadge}>
-                  <MaterialCommunityIcons
-                    name="account-group"
-                    size={16}
-                    color={room.active ? '#FFFFFF' : '#666666'}
-                  />
-                  <Text style={[
-                    styles.membersText,
-                    !room.active && styles.membersTextDisabled,
-                  ]}>
-                    {room.members}
-                  </Text>
-                </View>
-                {room.active && (
-                  <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
-                )}
-              </View>
+        {/* Public Spaces Section */}
+        {publicSpaces.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="globe-outline" size={20} color="#999999" />
+              <Text style={styles.sectionTitle}>Public Spaces</Text>
             </View>
+            {publicSpaces.map((space) => renderSpaceCard(space, false))}
+          </View>
+        )}
 
-            {/* Geometric Accent Lines */}
-            {room.active && (
-              <View style={styles.accentLines}>
-                <View style={styles.accentLine1} />
-                <View style={styles.accentLine2} />
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+        {/* Private Spaces Section */}
+        {privateSpaces.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="lock-closed-outline" size={20} color="#999999" />
+              <Text style={styles.sectionTitle}>Private Spaces</Text>
+            </View>
+            {privateSpaces.map((space) => renderSpaceCard(space, true))}
+          </View>
+        )}
+
+        {/* Empty State */}
+        {publicSpaces.length === 0 && privateSpaces.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons name="planet-outline" size={64} color="#666666" />
+            <Text style={styles.emptyStateText}>No spaces available</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Pull down to refresh
+            </Text>
+          </View>
+        )}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacer} />
@@ -199,6 +252,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    color: '#999999',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  retryButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '700',
   },
   backgroundPattern: {
     position: 'absolute',
@@ -219,7 +308,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: 60,
-    paddingBottom: 32,
+    paddingBottom: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -253,11 +342,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 20,
   },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999999',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   roomCard: {
-    backgroundColor: '#1A1A1A',
     borderRadius: 20,
     marginBottom: 16,
-    padding: 20,
+    overflow: 'hidden',
     borderWidth: 2,
     borderColor: '#2A2A2A',
     shadowColor: '#FFFFFF',
@@ -265,11 +369,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
-    overflow: 'hidden',
   },
-  roomCardDisabled: {
-    opacity: 0.5,
-    shadowOpacity: 0,
+  cardBackground: {
+    width: '100%',
+    height: 120,
+  },
+  cardBackgroundImage: {
+    borderRadius: 18,
+  },
+  cardOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+    justifyContent: 'center',
   },
   cardContent: {
     flexDirection: 'row',
@@ -282,36 +394,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     borderRadius: 16,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    borderWidth: 2,
-    borderColor: '#3A3A3A',
-  },
-  iconContainerActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   cardText: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   roomName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
-  roomNameDisabled: {
-    color: '#666666',
+  privateBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   roomSubtitle: {
     fontSize: 14,
-    color: '#888888',
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 4,
     letterSpacing: 0.3,
   },
   cardRight: {
@@ -322,38 +438,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#3A3A3A',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   membersText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  membersTextDisabled: {
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
     color: '#666666',
+    marginTop: 16,
   },
-  accentLines: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-  },
-  accentLine1: {
-    width: 100,
-    height: 2,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.2,
-    marginBottom: 8,
-  },
-  accentLine2: {
-    width: 60,
-    height: 2,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.15,
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#555555',
+    marginTop: 8,
   },
   bottomSpacer: {
     height: 20,
