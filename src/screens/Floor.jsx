@@ -39,13 +39,16 @@ const extractYouTubeVideoId = (url) => {
   return null;
 };
 
-const Floor = ({ navigation }) => {
+const Floor = ({ navigation, route }) => {
+  // Get space info from navigation params
+  const { spaceId, spaceName } = route?.params || {};
+
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { width, height } = dimensions;
   const { x, y, walkCycle, walkTo } = useWalker(50, 100);
 
-  // WebSocket connection for multiplayer
-  const { isConnected, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, pokeUser, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, incomingPokes, clearTomatoThrow, clearPlaneThrow, clearMessage, clearPoke } = useGameSocket();
+  // WebSocket connection for multiplayer (space-scoped)
+  const { isConnected, isInSpace, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, pokeUser, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, incomingPokes, clearTomatoThrow, clearPlaneThrow, clearMessage, clearPoke } = useGameSocket(spaceId);
 
   // Video player ref
   const videoPlayerRef = useRef(null);
@@ -555,7 +558,7 @@ const Floor = ({ navigation }) => {
 
   return (
     <>
-      <Header navigation={navigation} playersLength={players.length} isConnected={isConnected} />
+      <Header navigation={navigation} playersLength={players.length} isConnected={isConnected && isInSpace} spaceName={spaceName} />
       <VideoContainer
         ref={videoPlayerRef}
         videoId={currentVideoId}
