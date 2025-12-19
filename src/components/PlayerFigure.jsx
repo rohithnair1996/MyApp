@@ -1,5 +1,6 @@
 import { Group, RoundedRect, useFont } from '@shopify/react-native-skia';
 import React from 'react';
+import { useDerivedValue } from 'react-native-reanimated';
 import { ANIMATION, AVATAR } from '../constants/playerConstants';
 import { useArmGeometry } from '../hooks/player/useArmGeometry';
 import { useBodyGeometry } from '../hooks/player/useBodyGeometry';
@@ -103,8 +104,8 @@ const PlayerFigure = ({
     sharedValues,
   });
 
-  // Heart spawn position
-  const heartSpawnY = y - AVATAR.leg.height - AVATAR.body.height * 0.3;
+  // Heart spawn position (derived from shared value y)
+  const heartSpawnY = useDerivedValue(() => y.value - AVATAR.leg.height - AVATAR.body.height * 0.3);
 
   const { body, colors } = AVATAR;
 

@@ -1,6 +1,7 @@
 import { Canvas, useImage } from '@shopify/react-native-skia';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import PlayerFigure from '../components/PlayerFigure';
 import { ANIMATION } from '../constants/playerConstants';
 import { usePlayerState } from '../hooks/usePlayerState';
@@ -33,6 +34,10 @@ const DummyScreen = () => {
 
   // Load face image
   const faceImage = useImage(require('../assets/a1.png'));
+
+  // Position shared values
+  const x = useSharedValue(200);
+  const y = useSharedValue(400);
 
   // Speech bubble state with auto-disappear
   const [speechText, setSpeechText] = useState(null);
@@ -154,8 +159,8 @@ const DummyScreen = () => {
       {/* Skia Canvas */}
       <Canvas style={styles.canvas}>
         <PlayerFigure
-          x={200}
-          y={400}
+          x={x}
+          y={y}
           playerName="Alex"
           color="#4A90E2"
           faceImage={faceImage}

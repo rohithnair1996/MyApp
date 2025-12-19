@@ -3,8 +3,7 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/api';
+import api from '../config/api';
 
 // 966771549284-h3q9qf1gqtm5svefogp5eqv4hlt7ccl9.apps.googleusercontent.com
 
@@ -30,7 +29,7 @@ export const signInWithGoogle = async () => {
     console.log('Google Sign-In success:', userInfo);
 
     // Send the ID token to your backend for verification
-    const backendResponse = await axios.post(`${API_BASE_URL}/auth/google`, {
+    const backendResponse = await api.post('/auth/google', {
       idToken: userInfo.idToken,
       user: {
         email: userInfo.user.email,

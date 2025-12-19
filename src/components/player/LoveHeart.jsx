@@ -22,12 +22,12 @@ const LoveHeart = ({ baseX, baseY, color, seed }) => {
     const heartX = useDerivedValue(() => {
         const drift = Math.sin(progress.value * Math.PI * 3 + seed * Math.PI * 2) * horizontalDrift;
         const offsetX = (seed - 0.5) * 40; // Random starting offset
-        return baseX + drift + offsetX;
+        return baseX.value + drift + offsetX;
     });
 
     // Rise up from spawn point
     const heartY = useDerivedValue(() => {
-        return baseY - progress.value * riseHeight;
+        return baseY.value - progress.value * riseHeight;
     });
 
     // Size grows as it rises, then shrinks at burst

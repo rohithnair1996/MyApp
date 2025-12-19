@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/api';
+import api from '../config/api';
 import Input from './Input';
 import Button from './Button';
 import { configureGoogleSignIn, signInWithGoogle } from '../utils/googleSignIn';
@@ -46,14 +45,10 @@ const LoginForm = ({ onSuccess }) => {
     setIsLoading(true);
 
     try {
-      console.log('Login API URL:', `${API_BASE_URL}/signin`);
-      console.log('Login API payload:', { username: email.trim() });
-
-      const response = await axios.post(`${API_BASE_URL}/signin`, {
+      const response = await api.post('/signin', {
         username: email.trim(),
         password: password,
       });
-      console.log('Login API response:', response);
 
       const data = response.data;
 
@@ -65,15 +60,10 @@ const LoginForm = ({ onSuccess }) => {
         Alert.alert('Login Failed', data.error || 'Please try again');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      console.error('Error details:', error.message);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-
       if (error.response) {
         Alert.alert('Login Error', error.response.data?.error || 'Invalid credentials');
       } else if (error.request) {
-        Alert.alert('Connection Error', `Could not connect to server at ${API_BASE_URL}`);
+        Alert.alert('Connection Error', 'Could not connect to server. Please check your connection.');
       } else {
         Alert.alert('Error', error.message || 'An unexpected error occurred');
       }

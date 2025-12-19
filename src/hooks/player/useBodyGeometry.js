@@ -114,12 +114,12 @@ export const useBodyGeometry = ({
     // ═══════════════════════════════════════════════════════════
     // BODY POSITIONS
     // ═══════════════════════════════════════════════════════════
-    const bodyX = useDerivedValue(() => x + bodyXOffset.value);
+    const bodyX = useDerivedValue(() => x.value + bodyXOffset.value);
     const bodyLeftX = useDerivedValue(() => bodyX.value - scaledBodyWidth.value / 2);
     const bodyRightX = useDerivedValue(() => bodyX.value + scaledBodyWidth.value / 2);
 
     const bodyTopY = useDerivedValue(() => {
-        const normalY = y - AVATAR.body.height - AVATAR.leg.height;
+        const normalY = y.value - AVATAR.body.height - AVATAR.leg.height;
         const scaleOffset = (AVATAR.body.height - scaledBodyHeight.value);
         return normalY - bodyOffset.value + scaleOffset;
     });

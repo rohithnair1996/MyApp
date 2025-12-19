@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { authFetch } from '../config/api';
+import api from '../config/api';
 
 const SpacesScreen = ({ navigation }) => {
   const [publicSpaces, setPublicSpaces] = useState([]);
@@ -24,8 +24,8 @@ const SpacesScreen = ({ navigation }) => {
   const fetchSpaces = async () => {
     try {
       setError(null);
-      const response = await authFetch('/spaces');
-      const data = await response.json();
+      const response = await api.get('/spaces');
+      const data = response.data;
 
       if (data.success) {
         setPublicSpaces(data.publicSpaces || []);
@@ -34,8 +34,11 @@ const SpacesScreen = ({ navigation }) => {
         setError(data.error || 'Failed to fetch spaces');
       }
     } catch (err) {
-      console.error('Error fetching spaces:', err);
-      setError('Network error. Please check your connection.');
+      if (err.response) {
+        setError(err.response.data?.error || 'Failed to fetch spaces');
+      } else {
+        setError('Network error. Please check your connection.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

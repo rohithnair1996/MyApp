@@ -46,15 +46,15 @@ export const useLegGeometry = ({
     });
 
     // ═══════════════════════════════════════════════════════════
-    // STATIC LEG X POSITIONS
+    // LEG X POSITIONS (now derived from shared value)
     // ═══════════════════════════════════════════════════════════
-    const leftLegX = x - AVATAR.leg.spacing;
-    const rightLegX = x + AVATAR.leg.spacing;
+    const leftLegX = useDerivedValue(() => x.value - AVATAR.leg.spacing);
+    const rightLegX = useDerivedValue(() => x.value + AVATAR.leg.spacing);
 
     // ═══════════════════════════════════════════════════════════
     // FOOT Y
     // ═══════════════════════════════════════════════════════════
-    const footY = useDerivedValue(() => y);
+    const footY = useDerivedValue(() => y.value);
 
     // ═══════════════════════════════════════════════════════════
     // LEG POINTS
@@ -74,7 +74,7 @@ export const useLegGeometry = ({
             return vec(legEndX, legEndY);
         }
         return vec(
-            leftLegX + Math.sin(angleRad) * AVATAR.leg.height,
+            leftLegX.value + Math.sin(angleRad) * AVATAR.leg.height,
             footY.value - Math.abs(Math.sin(angleRad)) * footLift
         );
     });
@@ -84,7 +84,7 @@ export const useLegGeometry = ({
         if (jumpProgress.value > 0) {
             return leftLegStartX.value + Math.sin(angleRad) * AVATAR.leg.height;
         }
-        return leftLegX + Math.sin(angleRad) * AVATAR.leg.height;
+        return leftLegX.value + Math.sin(angleRad) * AVATAR.leg.height;
     });
 
     const leftFootY = useDerivedValue(() => {
@@ -109,7 +109,7 @@ export const useLegGeometry = ({
             return vec(legEndX, legEndY);
         }
         return vec(
-            rightLegX + Math.sin(angleRad) * AVATAR.leg.height,
+            rightLegX.value + Math.sin(angleRad) * AVATAR.leg.height,
             footY.value - Math.abs(Math.sin(angleRad)) * footLift
         );
     });
@@ -119,7 +119,7 @@ export const useLegGeometry = ({
         if (jumpProgress.value > 0) {
             return rightLegStartX.value + Math.sin(angleRad) * AVATAR.leg.height;
         }
-        return rightLegX + Math.sin(angleRad) * AVATAR.leg.height;
+        return rightLegX.value + Math.sin(angleRad) * AVATAR.leg.height;
     });
 
     const rightFootY = useDerivedValue(() => {

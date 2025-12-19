@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/api';
+import api from '../config/api';
 import Input from './Input';
 import Button from './Button';
 import { configureGoogleSignIn, signInWithGoogle } from '../utils/googleSignIn';
@@ -63,14 +62,10 @@ const SignupForm = ({ onSuccess }) => {
     setIsLoading(true);
 
     try {
-      console.log('Signup API URL:', `${API_BASE_URL}/signup`);
-      console.log('Signup API payload:', { username: username.trim() });
-
-      const response = await axios.post(`${API_BASE_URL}/signup`, {
+      const response = await api.post('/signup', {
         username: username.trim(),
         password: password,
       });
-      console.log('Signup API response:', response);
 
       const data = response.data;
 
@@ -82,15 +77,10 @@ const SignupForm = ({ onSuccess }) => {
         Alert.alert('Signup Failed', data.error || 'Please try again');
       }
     } catch (error) {
-      console.error('Signup error:', error);
-      console.error('Error details:', error.message);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-
       if (error.response) {
         Alert.alert('Signup Error', error.response.data?.error || 'Could not create account');
       } else if (error.request) {
-        Alert.alert('Connection Error', `Could not connect to server at ${API_BASE_URL}`);
+        Alert.alert('Connection Error', 'Could not connect to server. Please check your connection.');
       } else {
         Alert.alert('Error', error.message || 'An unexpected error occurred');
       }

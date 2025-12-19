@@ -12,12 +12,12 @@ const DustParticle = ({ baseX, baseY, index, progress, visible }) => {
 
     const particleX = useDerivedValue(() => {
         const baseSpreadX = side * spreadX * spreadFactor * (0.5 + seed * 0.5);
-        return baseX + baseSpreadX * progress.value;
+        return baseX.value + baseSpreadX * progress.value;
     });
 
     const particleY = useDerivedValue(() => {
         const riseAmount = riseY * Math.sin(progress.value * Math.PI);
-        return baseY - riseAmount;
+        return baseY.value - riseAmount;
     });
 
     const particleSize = useDerivedValue(() => {

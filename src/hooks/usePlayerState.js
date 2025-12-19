@@ -84,6 +84,7 @@ export const usePlayerState = () => {
         isSad,
         isAngry,
         isRomance,
+        setIsWalking,
         handleJump,
         handleWave,
         handleClap,

@@ -1,6 +1,6 @@
 import { Group, RoundedRect, Text } from '@shopify/react-native-skia';
-import React from 'react';
-import { useDerivedValue } from 'react-native-reanimated';
+import React, { useMemo, useEffect } from 'react';
+import { useDerivedValue, useSharedValue } from 'react-native-reanimated';
 import { AVATAR } from '../../constants/playerConstants';
 
 const PlayerNamePlate = ({
@@ -24,15 +24,16 @@ const PlayerNamePlate = ({
     });
 
     const namePlateY = useDerivedValue(() => {
-        const normalY = y - AVATAR.leg.height - AVATAR.namePlate.offsetY;
+        const normalY = y.value - AVATAR.leg.height - AVATAR.namePlate.offsetY;
         return normalY - bodyOffset.value;
     });
 
     const nameTextY = useDerivedValue(() => namePlateY.value + 9);
 
-    let nameText = playerName;
-    const nameXOffset = useDerivedValue(() => {
-        if (!font) return x;
+    // Calculate text width outside of worklet (font methods can't be called in worklets)
+    const { nameText, textHalfWidth } = useMemo(() => {
+        if (!font) return { nameText: playerName, textHalfWidth: 0 };
+
         const maxWidth = AVATAR.body.width - (AVATAR.namePlate.paddingX * 2) - (AVATAR.namePlate.textPadding * 2);
         let text = playerName;
         let textWidth = font.getTextWidth(text);
@@ -40,17 +41,21 @@ const PlayerNamePlate = ({
             text = text.slice(0, -1);
             textWidth = font.getTextWidth(text);
         }
-        return bodyX.value - (textWidth / 2);
-    });
+        return { nameText: text, textHalfWidth: textWidth / 2 };
+    }, [font, playerName]);
 
-    if (font) {
-        const maxWidth = AVATAR.body.width - (AVATAR.namePlate.paddingX * 2) - (AVATAR.namePlate.textPadding * 2);
-        let textWidth = font.getTextWidth(nameText);
-        while (nameText.length > 0 && textWidth > maxWidth) {
-            nameText = nameText.slice(0, -1);
-            textWidth = font.getTextWidth(nameText);
-        }
-    }
+    // Use shared value for text half width so it's reactive in worklet
+    const textHalfWidthSV = useSharedValue(textHalfWidth);
+
+    // Update shared value when textHalfWidth changes
+    useEffect(() => {
+        textHalfWidthSV.value = textHalfWidth;
+    }, [textHalfWidth, textHalfWidthSV]);
+
+    // Use the shared value in the worklet
+    const nameXOffset = useDerivedValue(() => {
+        return bodyX.value - textHalfWidthSV.value;
+    });
 
     return (
         <Group>

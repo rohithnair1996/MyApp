@@ -9,14 +9,16 @@ import Header from '../components/Header';
 import VideoContainer from '../components/VideoContainer';
 import Tomato from '../components/Tomato';
 import Plane from '../components/Plane';
-import { SimpleCharacter } from '../components/character/SimpleCharacter';
+import PlayerFigure from '../components/PlayerFigure';
 import { useWalker } from '../components/character/useWalker';
 import RemotePlayer from '../components/RemotePlayer';
+import { useImage } from '@shopify/react-native-skia';
 
 import BottomSheet from '../components/BottomSheet';
 import MessagePopup from '../components/MessagePopup';
 import ExitConfirmationModal from '../components/ExitConfirmationModal';
 import { useGameSocket } from '../hooks/useGameSocket';
+import { usePlayerState } from '../hooks/usePlayerState';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -46,6 +48,33 @@ const Floor = ({ navigation, route }) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { width, height } = dimensions;
   const { x, y, walkCycle, walkTo } = useWalker(50, 100);
+
+  // Load face image for player
+  const faceImage = useImage(require('../assets/a4.png'));
+
+  // Player emotions/actions state
+  const {
+    isWalking,
+    isRunning,
+    isJumping,
+    isDancing,
+    isWaving,
+    isClapping,
+    isSad,
+    isAngry,
+    isRomance,
+    setIsWalking,
+    handleJump,
+    handleWave,
+    handleClap,
+    toggleDancing,
+    toggleSad,
+    toggleAngry,
+    toggleRomance,
+  } = usePlayerState();
+
+  // Emotions bottom sheet state
+  const [isEmotionsSheetVisible, setIsEmotionsSheetVisible] = useState(false);
 
   // WebSocket connection for multiplayer (space-scoped)
   const { isConnected, isInSpace, players, myUserId, movePlayer, throwTomato, throwPlane, sendMessage, pokeUser, incomingTomatoThrows, incomingPlaneThrows, incomingMessages, incomingPokes, clearTomatoThrow, clearPlaneThrow, clearMessage, clearPoke } = useGameSocket(spaceId);
@@ -298,16 +327,56 @@ const Floor = ({ navigation, route }) => {
     });
   }, [incomingPokes, players, clearPoke]);
 
+  // Check if touch point is on the player's own character
+  const checkOwnPlayerClick = useCallback((touchX, touchY) => {
+    const playerX = x.value;
+    const playerY = y.value; // This is the feet/bottom position
+
+    // Player dimensions from playerConstants.js
+    // Body: 60x80, Legs: 30 height
+    // The y position is at the feet, body is drawn ABOVE it
+    const totalHeight = 80 + 30; // body.height + leg.height = 110
+    const bodyWidth = 60;
+
+    // Use larger hit area for easier touch detection
+    const hitPadding = 20;
+
+    // Calculate player's rectangular bounds (body is above the y position)
+    const left = playerX - bodyWidth / 2 - hitPadding;
+    const right = playerX + bodyWidth / 2 + hitPadding;
+    const top = playerY - totalHeight - hitPadding; // Top of head
+    const bottom = playerY + hitPadding; // Feet
+
+    const isWithinBounds = touchX >= left && touchX <= right && touchY >= top && touchY <= bottom;
+
+    console.log('checkOwnPlayerClick:', {
+      touchX, touchY,
+      playerX, playerY,
+      bounds: { left, right, top, bottom },
+      isWithinBounds
+    });
+
+    return isWithinBounds;
+  }, [x, y]);
+
   // Handle long press events (memoized)
   const handleLongPress = useCallback((event) => {
     const { locationX, locationY } = event.nativeEvent;
+    console.log('Long press at:', locationX, locationY);
 
-    // Check if user was long pressed
+    // Check if user long pressed their own character
+    if (checkOwnPlayerClick(locationX, locationY)) {
+      console.log('Opening emotions sheet');
+      setIsEmotionsSheetVisible(true);
+      return;
+    }
+
+    // Check if another user was long pressed
     const longPressedUser = checkUserClick(locationX, locationY);
     if (longPressedUser) {
       console.log('Username:', longPressedUser.username);
     }
-  }, [checkUserClick]);
+  }, [checkOwnPlayerClick, checkUserClick]);
 
   // Handle touch events (memoized)
   const handlePress = useCallback(async (event) => {
@@ -324,13 +393,28 @@ const Floor = ({ navigation, route }) => {
       return;
     }
 
+    // Calculate distance and duration for walking animation
+    const dx = locationX - x.value;
+    const dy = locationY - y.value;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const speed = 100; // pixels per second (same as useWalker)
+    const duration = (distance / speed) * 1000;
+
+    // Start walking animation
+    setIsWalking(true);
+
     // Move player to clicked position locally
     walkTo(locationX, locationY);
+
+    // Stop walking after animation completes
+    setTimeout(() => {
+      setIsWalking(false);
+    }, duration);
 
     // Send position to server via WebSocket (convert to percentage)
     const position = formatPositionForAPI(locationX, locationY, width, height);
     movePlayer(position.x, position.y);
-  }, [checkUserClick, walkTo, width, height, movePlayer]);
+  }, [checkUserClick, walkTo, width, height, movePlayer, x, y, setIsWalking]);
 
   // Handle opening video playlist bottom sheet
   const handleOpenVideoPlaylist = useCallback(() => {
@@ -577,7 +661,7 @@ const Floor = ({ navigation, route }) => {
           }
         }}
       />
-      <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} onLayout={handleLayout}>
+      <Pressable style={styles.container} onPress={handlePress} onLongPress={handleLongPress} delayLongPress={300} onLayout={handleLayout}>
         <Canvas style={styles.canvas}>
           {width > 0 && height > 0 && (
             <>
@@ -586,7 +670,22 @@ const Floor = ({ navigation, route }) => {
                 height={height}
                 imagePath={require('../images/floor4.jpg')}
               />
-              <SimpleCharacter x={x} y={y} walkCycle={walkCycle} image={require('../assets/a4.png')} />
+              <PlayerFigure
+                x={x}
+                y={y}
+                playerName="Me"
+                color="#4A90E2"
+                faceImage={faceImage}
+                isWalking={isWalking}
+                isRunning={isRunning}
+                isJumping={isJumping}
+                isDancing={isDancing}
+                isWaving={isWaving}
+                isClapping={isClapping}
+                isSad={isSad}
+                isAngry={isAngry}
+                isRomance={isRomance}
+              />
 
               {/* Other users */}
               {players
@@ -805,6 +904,102 @@ const Floor = ({ navigation, route }) => {
             <Text style={styles.timeText}>
               {Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')}
             </Text>
+          </View>
+        </View>
+      </BottomSheet>
+
+      {/* Emotions Bottom Sheet */}
+      <BottomSheet
+        visible={isEmotionsSheetVisible}
+        onClose={() => setIsEmotionsSheetVisible(false)}
+        height={450}
+      >
+        <View style={styles.bottomSheetContent}>
+          <Text style={styles.bottomSheetTitle}>Express Yourself</Text>
+
+          {/* Actions Row */}
+          <Text style={styles.emotionSectionTitle}>Actions</Text>
+          <View style={styles.emotionButtonsRow}>
+            <TouchableOpacity
+              style={[styles.emotionButton, isDancing && styles.emotionButtonActive]}
+              onPress={() => {
+                toggleDancing();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>💃</Text>
+              <Text style={styles.emotionLabel}>Dance</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.emotionButton, isWaving && styles.emotionButtonActive]}
+              onPress={() => {
+                handleWave();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>👋</Text>
+              <Text style={styles.emotionLabel}>Wave</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.emotionButton, isClapping && styles.emotionButtonActive]}
+              onPress={() => {
+                handleClap();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>👏</Text>
+              <Text style={styles.emotionLabel}>Clap</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.emotionButton, isJumping && styles.emotionButtonActive]}
+              onPress={() => {
+                handleJump();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>🦘</Text>
+              <Text style={styles.emotionLabel}>Jump</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Emotions Row */}
+          <Text style={styles.emotionSectionTitle}>Emotions</Text>
+          <View style={styles.emotionButtonsRow}>
+            <TouchableOpacity
+              style={[styles.emotionButton, isRomance && styles.emotionButtonActive]}
+              onPress={() => {
+                toggleRomance();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>🥰</Text>
+              <Text style={styles.emotionLabel}>Romance</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.emotionButton, isSad && styles.emotionButtonActive]}
+              onPress={() => {
+                toggleSad();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>😢</Text>
+              <Text style={styles.emotionLabel}>Sad</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.emotionButton, isAngry && styles.emotionButtonActive]}
+              onPress={() => {
+                toggleAngry();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>😠</Text>
+              <Text style={styles.emotionLabel}>Angry</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </BottomSheet>
@@ -1055,6 +1250,43 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: '#e0e0e0',
     marginVertical: 20,
+  },
+  emotionSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  emotionButtonsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  emotionButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    minWidth: 72,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+  },
+  emotionButtonActive: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+  },
+  emotionEmoji: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  emotionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 
