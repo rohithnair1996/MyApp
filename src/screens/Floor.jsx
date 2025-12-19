@@ -21,6 +21,7 @@ import { useGameSocket } from '../hooks/useGameSocket';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { CHARACTER_DIMENSIONS } from '../constants/character';
 import { formatPositionForAPI, parsePositionFromAPI } from '../utils/positionUtils';
+import { playClapSound, playJumpSound } from '../utils/soundPlayer';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import speakerImage from '../images/speaker.png';
 
@@ -383,7 +384,14 @@ const Floor = ({ navigation, route }) => {
     const { locationX, locationY } = event.nativeEvent;
     console.log('Touch at:', locationX, locationY);
 
-    // Check if user was clicked
+    // Check if user tapped their own character
+    if (checkOwnPlayerClick(locationX, locationY)) {
+      console.log('Opening emotions sheet');
+      setIsEmotionsSheetVisible(true);
+      return;
+    }
+
+    // Check if another user was clicked
     const clickedUser = checkUserClick(locationX, locationY);
     console.log('Clicked user:', clickedUser);
     if (clickedUser) {
@@ -414,7 +422,7 @@ const Floor = ({ navigation, route }) => {
     // Send position to server via WebSocket (convert to percentage)
     const position = formatPositionForAPI(locationX, locationY, width, height);
     movePlayer(position.x, position.y);
-  }, [checkUserClick, walkTo, width, height, movePlayer, x, y, setIsWalking]);
+  }, [checkOwnPlayerClick, checkUserClick, walkTo, width, height, movePlayer, x, y, setIsWalking]);
 
   // Handle opening video playlist bottom sheet
   const handleOpenVideoPlaylist = useCallback(() => {
@@ -734,7 +742,7 @@ const Floor = ({ navigation, route }) => {
       <BottomSheet
         visible={isBottomSheetVisible}
         onClose={() => setIsBottomSheetVisible(false)}
-        height={300}
+        height={500}
       >
         {selectedUser && (
           <View style={styles.bottomSheetContent}>
@@ -862,7 +870,7 @@ const Floor = ({ navigation, route }) => {
       <BottomSheet
         visible={isInfoBottomSheetVisible}
         onClose={() => setIsInfoBottomSheetVisible(false)}
-        height={350}
+        height={500}
       >
         <View style={styles.bottomSheetContent}>
           <Text style={styles.bottomSheetTitle}>Now Playing</Text>
@@ -912,7 +920,7 @@ const Floor = ({ navigation, route }) => {
       <BottomSheet
         visible={isEmotionsSheetVisible}
         onClose={() => setIsEmotionsSheetVisible(false)}
-        height={450}
+        height={500}
       >
         <View style={styles.bottomSheetContent}>
           <Text style={styles.bottomSheetTitle}>Express Yourself</Text>
@@ -946,6 +954,7 @@ const Floor = ({ navigation, route }) => {
               style={[styles.emotionButton, isClapping && styles.emotionButtonActive]}
               onPress={() => {
                 handleClap();
+                playClapSound();
                 setIsEmotionsSheetVisible(false);
               }}
             >
@@ -957,6 +966,7 @@ const Floor = ({ navigation, route }) => {
               style={[styles.emotionButton, isJumping && styles.emotionButtonActive]}
               onPress={() => {
                 handleJump();
+                playJumpSound();
                 setIsEmotionsSheetVisible(false);
               }}
             >
