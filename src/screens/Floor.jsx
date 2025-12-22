@@ -64,6 +64,7 @@ const Floor = ({ navigation, route }) => {
     isSad,
     isAngry,
     isRomance,
+    isSleeping,
     setIsWalking,
     handleJump,
     handleWave,
@@ -72,6 +73,7 @@ const Floor = ({ navigation, route }) => {
     toggleSad,
     toggleAngry,
     toggleRomance,
+    toggleSleeping,
   } = usePlayerState();
 
   // Emotions bottom sheet state
@@ -693,6 +695,7 @@ const Floor = ({ navigation, route }) => {
                 isSad={isSad}
                 isAngry={isAngry}
                 isRomance={isRomance}
+                isSleeping={isSleeping}
               />
 
               {/* Other users */}
@@ -1009,6 +1012,17 @@ const Floor = ({ navigation, route }) => {
             >
               <Text style={styles.emotionEmoji}>😠</Text>
               <Text style={styles.emotionLabel}>Angry</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.emotionButton, isSleeping && styles.emotionButtonActive]}
+              onPress={() => {
+                toggleSleeping();
+                setIsEmotionsSheetVisible(false);
+              }}
+            >
+              <Text style={styles.emotionEmoji}>😴</Text>
+              <Text style={styles.emotionLabel}>Sleep</Text>
             </TouchableOpacity>
           </View>
         </View>

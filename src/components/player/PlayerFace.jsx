@@ -24,6 +24,7 @@ const PlayerFace = ({
     tearProgress,
     showTear,
     isSad,
+    isSleeping = false,
     faceImage,
     colors,
 }) => {
@@ -72,23 +73,47 @@ const PlayerFace = ({
                 />
             )}
 
-            {/* EYES */}
-            <RoundedRect
-                x={leftEyeX}
-                y={eyeRectY}
-                width={eyeWidth}
-                height={eyeHeight}
-                r={eyeCornerRadius}
-                color={colors.eyes}
-            />
-            <RoundedRect
-                x={rightEyeX}
-                y={eyeRectY}
-                width={eyeWidth}
-                height={eyeHeight}
-                r={eyeCornerRadius}
-                color={colors.eyes}
-            />
+            {/* EYES - closed when sleeping */}
+            {isSleeping ? (
+                <>
+                    {/* Closed eyes (curved lines) */}
+                    <Line
+                        p1={{ x: leftEyeX.value, y: eyeRectY.value + eyeHeight.value / 2 }}
+                        p2={{ x: leftEyeX.value + eyeWidth.value, y: eyeRectY.value + eyeHeight.value / 2 }}
+                        color={colors.eyes}
+                        style="stroke"
+                        strokeWidth={2}
+                        strokeCap="round"
+                    />
+                    <Line
+                        p1={{ x: rightEyeX.value, y: eyeRectY.value + eyeHeight.value / 2 }}
+                        p2={{ x: rightEyeX.value + eyeWidth.value, y: eyeRectY.value + eyeHeight.value / 2 }}
+                        color={colors.eyes}
+                        style="stroke"
+                        strokeWidth={2}
+                        strokeCap="round"
+                    />
+                </>
+            ) : (
+                <>
+                    <RoundedRect
+                        x={leftEyeX}
+                        y={eyeRectY}
+                        width={eyeWidth}
+                        height={eyeHeight}
+                        r={eyeCornerRadius}
+                        color={colors.eyes}
+                    />
+                    <RoundedRect
+                        x={rightEyeX}
+                        y={eyeRectY}
+                        width={eyeWidth}
+                        height={eyeHeight}
+                        r={eyeCornerRadius}
+                        color={colors.eyes}
+                    />
+                </>
+            )}
 
             {/* TEAR */}
             {isSad && (

@@ -10,6 +10,7 @@ export const usePlayerState = () => {
     const [isSad, setIsSad] = useState(false);
     const [isAngry, setIsAngry] = useState(false);
     const [isRomance, setIsRomance] = useState(false);
+    const [isSleeping, setIsSleeping] = useState(false);
 
     const handleJump = () => {
         if (!isJumping) {
@@ -36,6 +37,7 @@ export const usePlayerState = () => {
         setIsWalking(false);
         setIsRunning(false);
         setIsDancing(false);
+        setIsSleeping(false);
     };
 
     const clearEmotions = () => {
@@ -74,6 +76,12 @@ export const usePlayerState = () => {
         setIsRomance(!isRomance);
     };
 
+    const toggleSleeping = () => {
+        clearMovement();
+        clearEmotions();
+        setIsSleeping(!isSleeping);
+    };
+
     return {
         isWalking,
         isRunning,
@@ -84,6 +92,7 @@ export const usePlayerState = () => {
         isSad,
         isAngry,
         isRomance,
+        isSleeping,
         setIsWalking,
         handleJump,
         handleWave,
@@ -94,5 +103,6 @@ export const usePlayerState = () => {
         toggleSad,
         toggleAngry,
         toggleRomance,
+        toggleSleeping,
     };
 };
