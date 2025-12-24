@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import api from '../config/api';
 
@@ -20,6 +23,24 @@ const SpacesScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('private'); // 'private' or 'public'
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [deleting, setDeleting] = useState(null); // Track which space is being deleted
+
+  // Get current user ID
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          setCurrentUserId(parsed.id || parsed._id || parsed.userId);
+        }
+      } catch (err) {
+        console.error('Error getting user ID:', err);
+      }
+    };
+    getUserId();
+  }, []);
 
   const fetchSpaces = async () => {
     try {
@@ -45,9 +66,12 @@ const SpacesScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    fetchSpaces();
-  }, []);
+  // Refresh spaces when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchSpaces();
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -58,61 +82,127 @@ const SpacesScreen = ({ navigation }) => {
     navigation.navigate('Floor', { spaceId: space.id, spaceName: space.name });
   };
 
-  const renderSpaceCard = (space, isPrivate = false) => (
-    <TouchableOpacity
-      key={space.id}
-      activeOpacity={0.85}
-      onPress={() => handleSpacePress(space)}
-      style={styles.roomCard}
-    >
-      {/* Image Section */}
-      <View style={styles.cardImageContainer}>
-        {space.backgroundImage ? (
-          <Image
-            source={{ uri: space.backgroundImage }}
-            style={styles.cardImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.cardImagePlaceholder}>
-            <Ionicons name="image-outline" size={32} color="#D0D0D0" />
-          </View>
-        )}
-        {/* Gradient overlay at bottom of image */}
-        <View style={styles.cardImageGradient} />
+  const handleDeleteSpace = (space) => {
+    Alert.alert(
+      'Delete Space',
+      `Are you sure you want to delete "${space.name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => confirmDelete(space),
+        },
+      ]
+    );
+  };
 
-        {/* People count badge on image */}
-        {space.currentPeopleCount > 0 && (
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>{space.currentPeopleCount} here</Text>
-          </View>
-        )}
-      </View>
+  const confirmDelete = async (space) => {
+    setDeleting(space.id);
+    try {
+      const response = await api.delete(`/spaces/${space.id}`);
+      if (response.data.success) {
+        // Remove from local state
+        setPublicSpaces(prev => prev.filter(s => s.id !== space.id));
+        setPrivateSpaces(prev => prev.filter(s => s.id !== space.id));
+      } else {
+        Alert.alert('Error', response.data.error || 'Failed to delete space');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 'Failed to delete space';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setDeleting(null);
+    }
+  };
 
-      {/* Info Section */}
-      <View style={styles.cardInfo}>
-        <View style={styles.cardInfoLeft}>
-          <View style={styles.cardNameRow}>
-            <Text style={styles.roomName} numberOfLines={1}>{space.name}</Text>
-            {isPrivate && (
-              <View style={styles.privateBadge}>
-                <Ionicons name="heart" size={12} color="#E8A0A0" />
-              </View>
-            )}
+  const isCreator = (space) => {
+    if (!currentUserId || !space.creatorId) return false;
+    return space.creatorId === currentUserId;
+  };
+
+  const renderSpaceCard = (space, isPrivate = false) => {
+    const canDelete = isCreator(space);
+    const isDeleting = deleting === space.id;
+
+    return (
+      <TouchableOpacity
+        key={space.id}
+        activeOpacity={0.85}
+        onPress={() => handleSpacePress(space)}
+        style={[styles.roomCard, isDeleting && styles.roomCardDeleting]}
+      >
+        {/* Image Section */}
+        <View style={styles.cardImageContainer}>
+          {space.backgroundImage ? (
+            <Image
+              source={{ uri: space.backgroundImage }}
+              style={styles.cardImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.cardImagePlaceholder}>
+              <Ionicons name="image-outline" size={32} color="#D0D0D0" />
+            </View>
+          )}
+          {/* Gradient overlay at bottom of image */}
+          <View style={styles.cardImageGradient} />
+
+          {/* People count badge on image */}
+          {space.currentPeopleCount > 0 && (
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>{space.currentPeopleCount} here</Text>
+            </View>
+          )}
+
+          {/* Delete button for creator */}
+          {canDelete && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleDeleteSpace(space);
+              }}
+              activeOpacity={0.7}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Info Section */}
+        <View style={styles.cardInfo}>
+          <View style={styles.cardInfoLeft}>
+            <View style={styles.cardNameRow}>
+              <Text style={styles.roomName} numberOfLines={1}>{space.name}</Text>
+              {isPrivate && (
+                <View style={styles.privateBadge}>
+                  <Ionicons name="heart" size={12} color="#E8A0A0" />
+                </View>
+              )}
+            </View>
+            <Text style={styles.roomSubtitle} numberOfLines={1}>
+              {space.currentPeopleCount > 0
+                ? `${space.currentPeopleCount} ${space.currentPeopleCount === 1 ? 'person' : 'people'} present`
+                : 'Quiet right now'}
+            </Text>
           </View>
-          <Text style={styles.roomSubtitle} numberOfLines={1}>
-            {space.currentPeopleCount > 0
-              ? `${space.currentPeopleCount} ${space.currentPeopleCount === 1 ? 'person' : 'people'} present`
-              : 'Quiet right now'}
-          </Text>
+          <View style={styles.cardInfoRight}>
+            <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
+          </View>
         </View>
-        <View style={styles.cardInfoRight}>
-          <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -263,6 +353,15 @@ const SpacesScreen = ({ navigation }) => {
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreateSpace')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="add" size={28} color="#FFFFFF" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -446,6 +545,9 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 5,
   },
+  roomCardDeleting: {
+    opacity: 0.6,
+  },
   cardImageContainer: {
     width: '100%',
     height: 140,
@@ -498,6 +600,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#5A5A5A',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardInfo: {
     flexDirection: 'row',
@@ -561,7 +674,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomSpacer: {
-    height: 20,
+    height: 80,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 28,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2C2C2C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#2C2C2C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });
 
