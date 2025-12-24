@@ -1,6 +1,6 @@
 import { Canvas, useImage } from '@shopify/react-native-skia';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { StatusBar, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import PlayerFigure from '../components/PlayerFigure';
 import { ANIMATION } from '../constants/playerConstants';
@@ -8,7 +8,7 @@ import { usePlayerState } from '../hooks/usePlayerState';
 import { styles } from '../styles/DummyScreenStyles';
 
 // Static array moved outside component to prevent recreation
-const SPEECH_PHRASES = ['Nice to meet you! mee evide aada kuttaaaappi'];
+const SPEECH_PHRASES = ['Nice to meet you!', 'Hello there!', 'How are you?'];
 
 const DummyScreen = () => {
   const {
@@ -74,86 +74,12 @@ const DummyScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Buttons Row 1 - Movement */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.button, isWalking && styles.buttonActive]}
-          onPress={toggleWalking}
-        >
-          <Text style={styles.buttonText}>🚶</Text>
-        </TouchableOpacity>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
 
-        <TouchableOpacity
-          style={[styles.button, styles.runButton, isRunning && styles.buttonActive]}
-          onPress={toggleRunning}
-        >
-          <Text style={styles.buttonText}>🏃</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.jumpButton]}
-          onPress={handleJump}
-        >
-          <Text style={styles.buttonText}>🦘</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.danceButton, isDancing && styles.buttonActive]}
-          onPress={toggleDancing}
-        >
-          <Text style={styles.buttonText}>💃</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Buttons Row 2 - Actions */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.button, styles.waveButton, isWaving && styles.buttonActive]}
-          onPress={handleWave}
-        >
-          <Text style={styles.buttonText}>👋</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.clapButton, isClapping && styles.buttonActive]}
-          onPress={handleClap}
-        >
-          <Text style={styles.buttonText}>👏</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Buttons Row 3 - Emotions */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.button, styles.sadButton, isSad && styles.buttonActive]}
-          onPress={toggleSad}
-        >
-          <Text style={styles.buttonText}>😢</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.angryButton, isAngry && styles.buttonActive]}
-          onPress={toggleAngry}
-        >
-          <Text style={styles.buttonText}>😠</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.romanceButton, isRomance && styles.buttonActive]}
-          onPress={toggleRomance}
-        >
-          <Text style={styles.buttonText}>🥰</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Buttons Row 4 - Speech */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.button, styles.speechButton, speechText && styles.buttonActive]}
-          onPress={showSpeech}
-        >
-          <Text style={styles.buttonText}>💬</Text>
-        </TouchableOpacity>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Character Preview</Text>
+        <Text style={styles.headerSubtitle}>Explore movements and expressions</Text>
       </View>
 
       {/* Skia Canvas */}
@@ -162,7 +88,7 @@ const DummyScreen = () => {
           x={x}
           y={y}
           playerName="Alex"
-          color="#4A90E2"
+          color="#7A8B99"
           faceImage={faceImage}
           speechText={speechText}
           isWalking={isWalking}
@@ -176,9 +102,99 @@ const DummyScreen = () => {
           isRomance={isRomance}
         />
       </Canvas>
+
+      {/* Controls */}
+      <View style={styles.controlsContainer}>
+        {/* Movement */}
+        <Text style={styles.sectionLabel}>Movement</Text>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, isWalking && styles.buttonActive]}
+            onPress={toggleWalking}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>🚶</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.runButton, isRunning && styles.buttonActive]}
+            onPress={toggleRunning}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>🏃</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.jumpButton]}
+            onPress={handleJump}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>🦘</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.danceButton, isDancing && styles.buttonActive]}
+            onPress={toggleDancing}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>💃</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.waveButton, isWaving && styles.buttonActive]}
+            onPress={handleWave}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>👋</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.clapButton, isClapping && styles.buttonActive]}
+            onPress={handleClap}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>👏</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Expressions */}
+        <Text style={styles.sectionLabel}>Expressions</Text>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.sadButton, isSad && styles.buttonActive]}
+            onPress={toggleSad}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>😢</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.angryButton, isAngry && styles.buttonActive]}
+            onPress={toggleAngry}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>😠</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.romanceButton, isRomance && styles.buttonActive]}
+            onPress={toggleRomance}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>🥰</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.speechButton, speechText && styles.buttonActive]}
+            onPress={showSpeech}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>💬</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };
-
 
 export default DummyScreen;
