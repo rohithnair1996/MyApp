@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,117 +6,291 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  Image,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import api from '../config/api';
 
 const SpacesScreen = ({ navigation }) => {
-  const rooms = [
-    {
-      id: '1',
-      name: 'Virtual Room',
-      subtitle: 'The main party hub',
-      icon: 'rocket',
-      active: true,
-      members: 12,
-    },
-    {
-      id: '2',
-      name: 'Chill Lounge',
-      subtitle: 'Relax and unwind',
-      icon: 'coffee',
-      active: false,
-      members: 8,
-    },
-    {
-      id: '3',
-      name: 'Dance Bay',
-      subtitle: 'Move to the rhythm',
-      icon: 'music',
-      active: false,
-      members: 24,
-    },
-    {
-      id: '4',
-      name: 'Audio Circle',
-      subtitle: 'Voice-only vibes',
-      icon: 'headphones',
-      active: false,
-      members: 6,
-    },
-    {
-      id: '5',
-      name: 'Afterglow',
-      subtitle: 'Late night talks',
-      icon: 'moon',
-      active: false,
-      members: 4,
-    },
-  ];
+  const [publicSpaces, setPublicSpaces] = useState([]);
+  const [privateSpaces, setPrivateSpaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('private'); // 'private' or 'public'
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [deleting, setDeleting] = useState(null); // Track which space is being deleted
 
-  const handleRoomPress = (room) => {
-    if (room.active) {
-      navigation.navigate('Floor');
+  // Get current user ID
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          setCurrentUserId(parsed.id || parsed._id || parsed.userId);
+        }
+      } catch (err) {
+        console.error('Error getting user ID:', err);
+      }
+    };
+    getUserId();
+  }, []);
+
+  const fetchSpaces = async () => {
+    try {
+      setError(null);
+      const response = await api.get('/spaces');
+      const data = response.data;
+
+      if (data.success) {
+        setPublicSpaces(data.publicSpaces || []);
+        setPrivateSpaces(data.privateSpaces || []);
+      } else {
+        setError(data.error || 'Failed to fetch spaces');
+      }
+    } catch (err) {
+      if (err.response) {
+        setError(err.response.data?.error || 'Failed to fetch spaces');
+      } else {
+        setError('Network error. Please check your connection.');
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const getIconComponent = (iconName) => {
-    const iconMap = {
-      rocket: 'rocket-launch',
-      coffee: 'coffee',
-      music: 'music-note',
-      headphones: 'headset',
-      moon: 'moon',
-    };
-    return iconMap[iconName] || 'star';
+  // Refresh spaces when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchSpaces();
+    }, [])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchSpaces();
   };
+
+  const handleSpacePress = (space) => {
+    navigation.navigate('Floor', { spaceId: space.id, spaceName: space.name });
+  };
+
+  const handleDeleteSpace = (space) => {
+    Alert.alert(
+      'Delete Space',
+      `Are you sure you want to delete "${space.name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => confirmDelete(space),
+        },
+      ]
+    );
+  };
+
+  const confirmDelete = async (space) => {
+    setDeleting(space.id);
+    try {
+      const response = await api.delete(`/spaces/${space.id}`);
+      if (response.data.success) {
+        // Remove from local state
+        setPublicSpaces(prev => prev.filter(s => s.id !== space.id));
+        setPrivateSpaces(prev => prev.filter(s => s.id !== space.id));
+      } else {
+        Alert.alert('Error', response.data.error || 'Failed to delete space');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 'Failed to delete space';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const isCreator = (space) => {
+    if (!currentUserId || !space.creatorId) return false;
+    return space.creatorId === currentUserId;
+  };
+
+  const renderSpaceCard = (space, isPrivate = false) => {
+    const canDelete = isCreator(space);
+    const isDeleting = deleting === space.id;
+
+    return (
+      <TouchableOpacity
+        key={space.id}
+        activeOpacity={0.85}
+        onPress={() => handleSpacePress(space)}
+        style={[styles.roomCard, isDeleting && styles.roomCardDeleting]}
+      >
+        {/* Image Section */}
+        <View style={styles.cardImageContainer}>
+          {space.backgroundImage ? (
+            <Image
+              source={{ uri: space.backgroundImage }}
+              style={styles.cardImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.cardImagePlaceholder}>
+              <Ionicons name="image-outline" size={32} color="#D0D0D0" />
+            </View>
+          )}
+          {/* Gradient overlay at bottom of image */}
+          <View style={styles.cardImageGradient} />
+
+          {/* People count badge on image */}
+          {space.currentPeopleCount > 0 && (
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>{space.currentPeopleCount} here</Text>
+            </View>
+          )}
+
+          {/* Delete button for creator */}
+          {canDelete && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleDeleteSpace(space);
+              }}
+              activeOpacity={0.7}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Info Section */}
+        <View style={styles.cardInfo}>
+          <View style={styles.cardInfoLeft}>
+            <View style={styles.cardNameRow}>
+              <Text style={styles.roomName} numberOfLines={1}>{space.name}</Text>
+              {isPrivate && (
+                <View style={styles.privateBadge}>
+                  <Ionicons name="heart" size={12} color="#E8A0A0" />
+                </View>
+              )}
+            </View>
+            <Text style={styles.roomSubtitle} numberOfLines={1}>
+              {space.currentPeopleCount > 0
+                ? `${space.currentPeopleCount} ${space.currentPeopleCount === 1 ? 'person' : 'people'} present`
+                : 'Quiet right now'}
+            </Text>
+          </View>
+          <View style={styles.cardInfoRight}>
+            <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
+        <ActivityIndicator size="large" color="#2C2C2C" />
+        <Text style={styles.loadingText}>Finding spaces...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
+        <View style={styles.errorIconContainer}>
+          <Ionicons name="cloud-offline-outline" size={48} color="#AAAAAA" />
+        </View>
+        <Text style={styles.errorTitle}>Connection issue</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchSpaces} activeOpacity={0.8}>
+          <Text style={styles.retryButtonText}>Try again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
 
-      {/* Animated Background Pattern */}
-      <View style={styles.backgroundPattern}>
-        {[...Array(20)].map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.confetti,
-              {
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: Math.random() * 6 + 2,
-                height: Math.random() * 6 + 2,
-                opacity: Math.random() * 0.15 + 0.05,
-              },
-            ]}
-          />
-        ))}
-        {[...Array(8)].map((_, i) => (
-          <View
-            key={`burst-${i}`}
-            style={[
-              styles.lightBurst,
-              {
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: Math.random() * 100 + 50,
-                height: Math.random() * 100 + 50,
-                opacity: Math.random() * 0.08 + 0.02,
-              },
-            ]}
-          />
-        ))}
-      </View>
+      {/* Decorative background element */}
+      <View style={styles.decorativeCircle} />
 
       {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Spaces</Text>
-          <Text style={styles.subtitle}>Choose your destination</Text>
+          <Text style={styles.subtitle}>Find a place to be</Text>
         </View>
-        <TouchableOpacity style={styles.profileButton}>
-          <Ionicons name="person-circle-outline" size={36} color="#FFFFFF" />
+        <TouchableOpacity style={styles.profileButton} activeOpacity={0.7}>
+          <Ionicons name="person-outline" size={22} color="#5A5A5A" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Bar */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'private' && styles.activeTab]}
+          onPress={() => setActiveTab('private')}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={activeTab === 'private' ? 'heart' : 'heart-outline'}
+            size={18}
+            color={activeTab === 'private' ? '#2C2C2C' : '#999999'}
+          />
+          <Text style={[styles.tabText, activeTab === 'private' && styles.activeTabText]}>
+            Friends
+          </Text>
+          {privateSpaces.length > 0 && (
+            <View style={[styles.tabBadge, activeTab === 'private' && styles.activeTabBadge]}>
+              <Text style={[styles.tabBadgeText, activeTab === 'private' && styles.activeTabBadgeText]}>
+                {privateSpaces.length}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'public' && styles.activeTab]}
+          onPress={() => setActiveTab('public')}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={activeTab === 'public' ? 'compass' : 'compass-outline'}
+            size={18}
+            color={activeTab === 'public' ? '#2C2C2C' : '#999999'}
+          />
+          <Text style={[styles.tabText, activeTab === 'public' && styles.activeTabText]}>
+            Explore
+          </Text>
+          {publicSpaces.length > 0 && (
+            <View style={[styles.tabBadge, activeTab === 'public' && styles.activeTabBadge]}>
+              <Text style={[styles.tabBadgeText, activeTab === 'public' && styles.activeTabBadgeText]}>
+                {publicSpaces.length}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -125,72 +299,69 @@ const SpacesScreen = ({ navigation }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#999999"
+            colors={['#2C2C2C']}
+          />
+        }
       >
-        {rooms.map((room) => (
-          <TouchableOpacity
-            key={room.id}
-            activeOpacity={room.active ? 0.7 : 0.95}
-            onPress={() => handleRoomPress(room)}
-            style={[
-              styles.roomCard,
-              !room.active && styles.roomCardDisabled,
-            ]}
-          >
-            <View style={styles.cardContent}>
-              <View style={styles.cardLeft}>
-                <View style={[
-                  styles.iconContainer,
-                  room.active && styles.iconContainerActive,
-                ]}>
-                  <Ionicons
-                    name={getIconComponent(room.icon)}
-                    size={32}
-                    color={room.active ? '#000000' : '#666666'}
-                  />
-                </View>
-                <View style={styles.cardText}>
-                  <Text style={[
-                    styles.roomName,
-                    !room.active && styles.roomNameDisabled,
-                  ]}>
-                    {room.name}
-                  </Text>
-                  <Text style={styles.roomSubtitle}>{room.subtitle}</Text>
-                </View>
+        {/* Private Spaces */}
+        {activeTab === 'private' && (
+          <>
+            {privateSpaces.length > 0 ? (
+              <View style={styles.section}>
+                {privateSpaces.map((space) => renderSpaceCard(space, true))}
               </View>
-              <View style={styles.cardRight}>
-                <View style={styles.membersBadge}>
-                  <MaterialCommunityIcons
-                    name="account-group"
-                    size={16}
-                    color={room.active ? '#FFFFFF' : '#666666'}
-                  />
-                  <Text style={[
-                    styles.membersText,
-                    !room.active && styles.membersTextDisabled,
-                  ]}>
-                    {room.members}
-                  </Text>
+            ) : (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconContainer}>
+                  <Ionicons name="heart-outline" size={40} color="#CCCCCC" />
                 </View>
-                {room.active && (
-                  <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
-                )}
-              </View>
-            </View>
-
-            {/* Geometric Accent Lines */}
-            {room.active && (
-              <View style={styles.accentLines}>
-                <View style={styles.accentLine1} />
-                <View style={styles.accentLine2} />
+                <Text style={styles.emptyStateText}>No friend spaces yet</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Private spaces with friends will appear here
+                </Text>
               </View>
             )}
-          </TouchableOpacity>
-        ))}
+          </>
+        )}
+
+        {/* Public Spaces */}
+        {activeTab === 'public' && (
+          <>
+            {publicSpaces.length > 0 ? (
+              <View style={styles.section}>
+                {publicSpaces.map((space) => renderSpaceCard(space, false))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconContainer}>
+                  <Ionicons name="compass-outline" size={40} color="#CCCCCC" />
+                </View>
+                <Text style={styles.emptyStateText}>No spaces available</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Pull down to check again
+                </Text>
+              </View>
+            )}
+          </>
+        )}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreateSpace')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="add" size={28} color="#FFFFFF" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -198,53 +369,160 @@ const SpacesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#FAFAF9',
   },
-  backgroundPattern: {
+  decorativeCircle: {
     position: 'absolute',
-    width: '100%',
-    height: '100%',
+    top: -120,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#F0EDE8',
+    opacity: 0.5,
   },
-  confetti: {
-    position: 'absolute',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 1,
-    transform: [{ rotate: '45deg' }],
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#FAFAF9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  lightBurst: {
-    position: 'absolute',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 1000,
+  loadingText: {
+    color: '#7A7A7A',
+    fontSize: 15,
+    marginTop: 20,
+    fontWeight: '400',
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#FAFAF9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F5F4F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: '#2C2C2C',
+    marginBottom: 8,
+  },
+  errorText: {
+    color: '#8A8A8A',
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 28,
+    lineHeight: 22,
+  },
+  retryButton: {
+    backgroundColor: '#2C2C2C',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: '#2C2C2C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '500',
   },
   header: {
     paddingHorizontal: 24,
     paddingTop: 60,
-    paddingBottom: 32,
+    paddingBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   title: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#999999',
-    marginTop: 4,
+    fontSize: 32,
+    fontWeight: '600',
+    color: '#2C2C2C',
     letterSpacing: 0.5,
   },
+  subtitle: {
+    fontSize: 15,
+    color: '#8A8A8A',
+    marginTop: 4,
+  },
   profileButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#1A1A1A',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#2A2A2A',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginBottom: 20,
+    backgroundColor: '#F5F4F2',
+    borderRadius: 14,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#999999',
+  },
+  activeTabText: {
+    color: '#2C2C2C',
+  },
+  tabBadge: {
+    backgroundColor: '#E8E6E3',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  activeTabBadge: {
+    backgroundColor: '#2C2C2C',
+  },
+  tabBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999999',
+  },
+  activeTabBadgeText: {
+    color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
@@ -253,110 +531,166 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 20,
   },
+  section: {
+    marginBottom: 24,
+  },
   roomCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 20,
+    borderRadius: 18,
     marginBottom: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#2A2A2A',
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
     overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 5,
   },
-  roomCardDisabled: {
-    opacity: 0.5,
-    shadowOpacity: 0,
+  roomCardDeleting: {
+    opacity: 0.6,
   },
-  cardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  cardImageContainer: {
+    width: '100%',
+    height: 140,
+    backgroundColor: '#F5F4F2',
+    position: 'relative',
   },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  cardImage: {
+    width: '100%',
+    height: '100%',
   },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: '#2A2A2A',
+  cardImagePlaceholder: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
-    borderWidth: 2,
-    borderColor: '#3A3A3A',
+    backgroundColor: '#F0EDE8',
   },
-  iconContainerActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
+  cardImageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: 'transparent',
   },
-  cardText: {
-    flex: 1,
-  },
-  roomName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  roomNameDisabled: {
-    color: '#666666',
-  },
-  roomSubtitle: {
-    fontSize: 14,
-    color: '#888888',
-    letterSpacing: 0.3,
-  },
-  cardRight: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  membersBadge: {
+  liveIndicator: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#2A2A2A',
-    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#3A3A3A',
+    borderRadius: 20,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  membersText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#7CB47C',
   },
-  membersTextDisabled: {
-    color: '#666666',
+  liveText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5A5A5A',
   },
-  accentLines: {
+  deleteButton: {
     position: 'absolute',
-    right: 0,
-    bottom: 0,
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  accentLine1: {
-    width: 100,
-    height: 2,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.2,
-    marginBottom: 8,
+  cardInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  accentLine2: {
-    width: 60,
-    height: 2,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.15,
+  cardInfoLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  cardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  roomName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2C2C2C',
+    letterSpacing: 0.2,
+  },
+  privateBadge: {
+    backgroundColor: '#FFF5F5',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  roomSubtitle: {
+    fontSize: 13,
+    color: '#8A8A8A',
+    marginTop: 3,
+  },
+  cardInfoRight: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F5F4F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyStateText: {
+    fontSize: 17,
+    fontWeight: '500',
+    color: '#5A5A5A',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#999999',
+    marginTop: 8,
+    textAlign: 'center',
   },
   bottomSpacer: {
-    height: 20,
+    height: 80,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 28,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2C2C2C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#2C2C2C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });
 

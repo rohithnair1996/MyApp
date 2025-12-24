@@ -7,6 +7,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import Floor from './src/screens/Floor';
 import LandingScreen from './src/screens/LandingScreen';
 import SpacesScreen from './src/screens/SpacesScreen';
+import DummyScreen from './src/screens/DummyScreen';
+import CreateSpaceScreen from './src/screens/CreateSpaceScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,7 +22,16 @@ export default function App() {
             component={LandingScreen}
             options={{
               headerShown: false,
-              statusBarColor: '#000000',
+              statusBarColor: '#FAFAF9',
+              statusBarTranslucent: true,
+            }}
+          />
+          <Stack.Screen
+            name="Dummy"
+            component={DummyScreen}
+            options={{
+              headerShown: false,
+              statusBarColor: '#FAFAF9',
               statusBarTranslucent: true,
             }}
           />
@@ -29,8 +40,18 @@ export default function App() {
             component={SpacesScreen}
             options={{
               headerShown: false,
-              statusBarColor: '#000000',
+              statusBarColor: '#FAFAF9',
               statusBarTranslucent: true,
+            }}
+          />
+          <Stack.Screen
+            name="CreateSpace"
+            component={CreateSpaceScreen}
+            options={{
+              headerShown: false,
+              statusBarColor: '#FAFAF9',
+              statusBarTranslucent: true,
+              animation: 'slide_from_bottom',
             }}
           />
           <Stack.Screen

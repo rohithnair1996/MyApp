@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ExitConfirmationModal from './ExitConfirmationModal';
 
-const Header = ({ navigation, playersLength, isConnected }) => {
+const Header = ({ navigation, playersLength, isConnected, spaceName }) => {
+  const [showExitPopup, setShowExitPopup] = useState(false);
+
   const handleBackPress = () => {
+    setShowExitPopup(true);
+  };
+
+  const handleJoinBackSoon = () => {
+    setShowExitPopup(false);
     if (navigation) {
-      navigation.navigate('Spaces');
+      navigation.goBack();
     }
+  };
+
+  const handleJoinLater = () => {
+    setShowExitPopup(false);
+    if (navigation) {
+      navigation.goBack();
+    }
+  };
+
+  const handleCancel = () => {
+    setShowExitPopup(false);
   };
 
   return (
@@ -33,9 +52,16 @@ const Header = ({ navigation, playersLength, isConnected }) => {
 
       {/* Content */}
       <View style={styles.content}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.leftContainer}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          {spaceName && (
+            <View style={styles.spaceNameContainer}>
+              <Text style={styles.spaceName} numberOfLines={1}>{spaceName}</Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.rightContainer}>
           <View style={styles.statsContainer}>
@@ -54,6 +80,14 @@ const Header = ({ navigation, playersLength, isConnected }) => {
       <View style={styles.bottomAccent}>
         <View style={styles.accentLine} />
       </View>
+
+      {/* Exit Confirmation Modal */}
+      <ExitConfirmationModal
+        visible={showExitPopup}
+        onJoinBackSoon={handleJoinBackSoon}
+        onJoinLater={handleJoinLater}
+        onCancel={handleCancel}
+      />
     </View>
   );
 };
@@ -88,6 +122,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 1,
   },
+  leftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
   backButton: {
     width: 48,
     height: 48,
@@ -102,6 +142,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  spaceNameContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  spaceName: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   rightContainer: {
     flexDirection: 'row',
