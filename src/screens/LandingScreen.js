@@ -93,7 +93,7 @@ const LandingScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F8F7FF" />
 
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Decorative subtle circle */}
@@ -190,7 +190,7 @@ const LandingScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F8F7FF',
   },
   content: {
     flex: 1,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: '#F0EDE8',
+    backgroundColor: '#E0E7FF',
     opacity: 0.6,
   },
   centerContent: {
@@ -217,13 +217,13 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 44,
     fontWeight: '300',
-    color: '#2C2C2C',
+    color: '#1E1B4B',
     letterSpacing: 3,
     marginBottom: 16,
   },
   tagline: {
     fontSize: 15,
-    color: '#8A8A8A',
+    color: '#6366F1',
     letterSpacing: 0.5,
     fontWeight: '400',
   },
@@ -233,12 +233,12 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 28,
     fontWeight: '500',
-    color: '#2C2C2C',
+    color: '#1E1B4B',
     marginBottom: 8,
   },
   subtleText: {
     fontSize: 15,
-    color: '#7A7A7A',
+    color: '#6B7280',
     marginBottom: 32,
     lineHeight: 22,
   },
@@ -246,13 +246,13 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   primaryButton: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#7C3AED',
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
-    shadowColor: '#2C2C2C',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 4,
   },
@@ -268,10 +268,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#E0DDD8',
+    borderColor: '#C4B5FD',
   },
   secondaryButtonText: {
-    color: '#5A5A5A',
+    color: '#6366F1',
     fontSize: 16,
     fontWeight: '500',
     letterSpacing: 0.3,
@@ -280,20 +280,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 28,
     fontSize: 13,
-    color: '#AAAAAA',
+    color: '#A5B4FC',
     fontStyle: 'italic',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(44, 44, 44, 0.4)',
+    backgroundColor: 'rgba(30, 27, 75, 0.4)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F8F7FF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: height * 0.8,
-    shadowColor: '#000',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 36,
     height: 4,
-    backgroundColor: '#D9D9D9',
+    backgroundColor: '#C4B5FD',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 14,

@@ -63,7 +63,7 @@ const CreateSpaceScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F8F7FF" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -72,7 +72,7 @@ const CreateSpaceScreen = ({ navigation }) => {
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#2C2C2C" />
+          <Ionicons name="arrow-back" size={24} color="#6366F1" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Space</Text>
         <View style={styles.headerRight} />
@@ -119,7 +119,7 @@ const CreateSpaceScreen = ({ navigation }) => {
                   <Ionicons
                     name="heart"
                     size={20}
-                    color={type === 'private' ? '#FFFFFF' : '#999999'}
+                    color={type === 'private' ? '#FFFFFF' : '#8B5CF6'}
                   />
                 </View>
                 <Text style={[styles.typeTitle, type === 'private' && styles.typeTitleActive]}>
@@ -139,7 +139,7 @@ const CreateSpaceScreen = ({ navigation }) => {
                   <Ionicons
                     name="compass"
                     size={20}
-                    color={type === 'public' ? '#FFFFFF' : '#999999'}
+                    color={type === 'public' ? '#FFFFFF' : '#8B5CF6'}
                   />
                 </View>
                 <Text style={[styles.typeTitle, type === 'public' && styles.typeTitleActive]}>
@@ -188,7 +188,7 @@ const CreateSpaceScreen = ({ navigation }) => {
           {/* Error Message */}
           {error && (
             <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle-outline" size={18} color="#D07070" />
+              <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -223,7 +223,7 @@ const CreateSpaceScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F8F7FF',
   },
   header: {
     flexDirection: 'row',
@@ -240,16 +240,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2C2C2C',
+    color: '#1E1B4B',
   },
   headerRight: {
     width: 44,
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   introText: {
     fontSize: 15,
-    color: '#8A8A8A',
+    color: '#6B7280',
     lineHeight: 22,
     marginBottom: 32,
   },
@@ -277,12 +277,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2C2C2C',
+    color: '#1E1B4B',
     marginBottom: 10,
   },
   labelHint: {
     fontSize: 13,
-    color: '#AAAAAA',
+    color: '#8B5CF6',
     marginTop: -6,
     marginBottom: 10,
   },
@@ -292,12 +292,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#2C2C2C',
+    color: '#1E1B4B',
     borderWidth: 1,
-    borderColor: '#EEEEEE',
-    shadowColor: '#000',
+    borderColor: '#E0E7FF',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 1,
   },
@@ -311,35 +311,35 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E7FF',
   },
   typeOptionActive: {
-    borderColor: '#2C2C2C',
+    borderColor: '#7C3AED',
   },
   typeIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#F5F4F2',
+    backgroundColor: '#EDE9FE',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   typeIconActive: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#7C3AED',
   },
   typeTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#5A5A5A',
+    color: '#6B7280',
     marginBottom: 4,
   },
   typeTitleActive: {
-    color: '#2C2C2C',
+    color: '#1E1B4B',
   },
   typeDescription: {
     fontSize: 12,
-    color: '#AAAAAA',
+    color: '#8B5CF6',
     lineHeight: 16,
   },
   imagePreview: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   previewImage: {
     width: '100%',
     height: 160,
-    backgroundColor: '#F0EDE8',
+    backgroundColor: '#E0E7FF',
   },
   removeImageButton: {
     position: 'absolute',
@@ -360,14 +360,14 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(124, 58, 237, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#FEE2E2',
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: 14,
-    color: '#D07070',
+    color: '#DC2626',
   },
   spacer: {
     height: 40,
@@ -384,21 +384,21 @@ const styles = StyleSheet.create({
   bottomContainer: {
     paddingHorizontal: 24,
     paddingVertical: 20,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F8F7FF',
     borderTopWidth: 1,
-    borderTopColor: '#F0EDE8',
+    borderTopColor: '#E0E7FF',
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#7C3AED',
     paddingVertical: 16,
     borderRadius: 14,
     gap: 8,
-    shadowColor: '#2C2C2C',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 4,
   },

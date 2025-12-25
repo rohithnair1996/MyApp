@@ -145,7 +145,7 @@ const SpacesScreen = ({ navigation }) => {
             />
           ) : (
             <View style={styles.cardImagePlaceholder}>
-              <Ionicons name="image-outline" size={32} color="#D0D0D0" />
+              <Ionicons name="image-outline" size={32} color="#A5B4FC" />
             </View>
           )}
           {/* Gradient overlay at bottom of image */}
@@ -186,7 +186,7 @@ const SpacesScreen = ({ navigation }) => {
               <Text style={styles.roomName} numberOfLines={1}>{space.name}</Text>
               {isPrivate && (
                 <View style={styles.privateBadge}>
-                  <Ionicons name="heart" size={12} color="#E8A0A0" />
+                  <Ionicons name="heart" size={12} color="#8B5CF6" />
                 </View>
               )}
             </View>
@@ -197,7 +197,7 @@ const SpacesScreen = ({ navigation }) => {
             </Text>
           </View>
           <View style={styles.cardInfoRight}>
-            <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
+            <Ionicons name="chevron-forward" size={20} color="#C4B5FD" />
           </View>
         </View>
       </TouchableOpacity>
@@ -207,8 +207,8 @@ const SpacesScreen = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
-        <ActivityIndicator size="large" color="#2C2C2C" />
+        <StatusBar barStyle="dark-content" backgroundColor="#F8F7FF" />
+        <ActivityIndicator size="large" color="#7C3AED" />
         <Text style={styles.loadingText}>Finding spaces...</Text>
       </View>
     );
@@ -217,9 +217,9 @@ const SpacesScreen = ({ navigation }) => {
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
+        <StatusBar barStyle="dark-content" backgroundColor="#F8F7FF" />
         <View style={styles.errorIconContainer}>
-          <Ionicons name="cloud-offline-outline" size={48} color="#AAAAAA" />
+          <Ionicons name="cloud-offline-outline" size={48} color="#8B5CF6" />
         </View>
         <Text style={styles.errorTitle}>Connection issue</Text>
         <Text style={styles.errorText}>{error}</Text>
@@ -232,7 +232,7 @@ const SpacesScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAFAF9" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F8F7FF" />
 
       {/* Decorative background element */}
       <View style={styles.decorativeCircle} />
@@ -244,7 +244,7 @@ const SpacesScreen = ({ navigation }) => {
           <Text style={styles.subtitle}>Find a place to be</Text>
         </View>
         <TouchableOpacity style={styles.profileButton} activeOpacity={0.7}>
-          <Ionicons name="person-outline" size={22} color="#5A5A5A" />
+          <Ionicons name="person-outline" size={22} color="#6366F1" />
         </TouchableOpacity>
       </View>
 
@@ -258,7 +258,7 @@ const SpacesScreen = ({ navigation }) => {
           <Ionicons
             name={activeTab === 'private' ? 'heart' : 'heart-outline'}
             size={18}
-            color={activeTab === 'private' ? '#2C2C2C' : '#999999'}
+            color={activeTab === 'private' ? '#7C3AED' : '#8B5CF6'}
           />
           <Text style={[styles.tabText, activeTab === 'private' && styles.activeTabText]}>
             Friends
@@ -279,7 +279,7 @@ const SpacesScreen = ({ navigation }) => {
           <Ionicons
             name={activeTab === 'public' ? 'compass' : 'compass-outline'}
             size={18}
-            color={activeTab === 'public' ? '#2C2C2C' : '#999999'}
+            color={activeTab === 'public' ? '#7C3AED' : '#8B5CF6'}
           />
           <Text style={[styles.tabText, activeTab === 'public' && styles.activeTabText]}>
             Explore
@@ -303,8 +303,8 @@ const SpacesScreen = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#999999"
-            colors={['#2C2C2C']}
+            tintColor="#8B5CF6"
+            colors={['#7C3AED']}
           />
         }
       >
@@ -318,7 +318,7 @@ const SpacesScreen = ({ navigation }) => {
             ) : (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconContainer}>
-                  <Ionicons name="heart-outline" size={40} color="#CCCCCC" />
+                  <Ionicons name="heart-outline" size={40} color="#8B5CF6" />
                 </View>
                 <Text style={styles.emptyStateText}>No friend spaces yet</Text>
                 <Text style={styles.emptyStateSubtext}>
@@ -339,7 +339,7 @@ const SpacesScreen = ({ navigation }) => {
             ) : (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconContainer}>
-                  <Ionicons name="compass-outline" size={40} color="#CCCCCC" />
+                  <Ionicons name="compass-outline" size={40} color="#8B5CF6" />
                 </View>
                 <Text style={styles.emptyStateText}>No spaces available</Text>
                 <Text style={styles.emptyStateSubtext}>
@@ -369,7 +369,7 @@ const SpacesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F8F7FF',
   },
   decorativeCircle: {
     position: 'absolute',
@@ -378,24 +378,24 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#F0EDE8',
+    backgroundColor: '#E0E7FF',
     opacity: 0.5,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F8F7FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#7A7A7A',
+    color: '#6B7280',
     fontSize: 15,
     marginTop: 20,
     fontWeight: '400',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F8F7FF',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F5F4F2',
+    backgroundColor: '#EDE9FE',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -412,24 +412,24 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#2C2C2C',
+    color: '#1E1B4B',
     marginBottom: 8,
   },
   errorText: {
-    color: '#8A8A8A',
+    color: '#6B7280',
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 28,
     lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#7C3AED',
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 14,
-    shadowColor: '#2C2C2C',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 4,
   },
@@ -449,12 +449,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '600',
-    color: '#2C2C2C',
+    color: '#1E1B4B',
     letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 15,
-    color: '#8A8A8A',
+    color: '#6366F1',
     marginTop: 4,
   },
   profileButton: {
@@ -465,10 +465,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EEEEEE',
-    shadowColor: '#000',
+    borderColor: '#E0E7FF',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 24,
     marginBottom: 20,
-    backgroundColor: '#F5F4F2',
+    backgroundColor: '#EDE9FE',
     borderRadius: 14,
     padding: 4,
   },
@@ -491,22 +491,22 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
   },
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#999999',
+    color: '#8B5CF6',
   },
   activeTabText: {
-    color: '#2C2C2C',
+    color: '#1E1B4B',
   },
   tabBadge: {
-    backgroundColor: '#E8E6E3',
+    backgroundColor: '#DDD6FE',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -514,12 +514,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTabBadge: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#7C3AED',
   },
   tabBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#999999',
+    color: '#8B5CF6',
   },
   activeTabBadgeText: {
     color: '#FFFFFF',
@@ -539,9 +539,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 5,
   },
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   cardImageContainer: {
     width: '100%',
     height: 140,
-    backgroundColor: '#F5F4F2',
+    backgroundColor: '#EDE9FE',
     position: 'relative',
   },
   cardImage: {
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F0EDE8',
+    backgroundColor: '#E0E7FF',
   },
   cardImageGradient: {
     position: 'absolute',
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     gap: 6,
-    shadowColor: '#000',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -594,12 +594,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#7CB47C',
+    backgroundColor: '#10B981',
   },
   liveText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#5A5A5A',
+    color: '#1E1B4B',
   },
   deleteButton: {
     position: 'absolute',
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(124, 58, 237, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -631,18 +631,18 @@ const styles = StyleSheet.create({
   roomName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2C2C2C',
+    color: '#1E1B4B',
     letterSpacing: 0.2,
   },
   privateBadge: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#EDE9FE',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
   },
   roomSubtitle: {
     fontSize: 13,
-    color: '#8A8A8A',
+    color: '#6B7280',
     marginTop: 3,
   },
   cardInfoRight: {
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F5F4F2',
+    backgroundColor: '#EDE9FE',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -665,11 +665,11 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 17,
     fontWeight: '500',
-    color: '#5A5A5A',
+    color: '#1E1B4B',
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#999999',
+    color: '#6B7280',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -683,12 +683,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#7C3AED',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2C2C2C',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
