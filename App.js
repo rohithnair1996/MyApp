@@ -9,6 +9,7 @@ import LandingScreen from './src/screens/LandingScreen';
 import SpacesScreen from './src/screens/SpacesScreen';
 import DummyScreen from './src/screens/DummyScreen';
 import CreateSpaceScreen from './src/screens/CreateSpaceScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,7 +23,7 @@ export default function App() {
             component={LandingScreen}
             options={{
               headerShown: false,
-              statusBarColor: '#FAFAF9',
+              statusBarColor: '#F8F7FF',
               statusBarTranslucent: true,
             }}
           />
@@ -31,7 +32,7 @@ export default function App() {
             component={DummyScreen}
             options={{
               headerShown: false,
-              statusBarColor: '#FAFAF9',
+              statusBarColor: '#F8F7FF',
               statusBarTranslucent: true,
             }}
           />
@@ -40,7 +41,7 @@ export default function App() {
             component={SpacesScreen}
             options={{
               headerShown: false,
-              statusBarColor: '#FAFAF9',
+              statusBarColor: '#F8F7FF',
               statusBarTranslucent: true,
             }}
           />
@@ -49,9 +50,19 @@ export default function App() {
             component={CreateSpaceScreen}
             options={{
               headerShown: false,
-              statusBarColor: '#FAFAF9',
+              statusBarColor: '#F8F7FF',
               statusBarTranslucent: true,
               animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen
+            name="Notifications"
+            component={NotificationsScreen}
+            options={{
+              headerShown: false,
+              statusBarColor: '#F8F7FF',
+              statusBarTranslucent: true,
+              animation: 'slide_from_right',
             }}
           />
           <Stack.Screen

@@ -243,9 +243,21 @@ const SpacesScreen = ({ navigation }) => {
           <Text style={styles.title}>Spaces</Text>
           <Text style={styles.subtitle}>Find a place to be</Text>
         </View>
-        <TouchableOpacity style={styles.profileButton} activeOpacity={0.7}>
-          <Ionicons name="person-outline" size={22} color="#6366F1" />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Notifications')}
+          >
+            <Ionicons name="notifications-outline" size={22} color="#6366F1" />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>5</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} activeOpacity={0.7}>
+            <Ionicons name="person-outline" size={22} color="#6366F1" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tab Bar */}
@@ -457,7 +469,12 @@ const styles = StyleSheet.create({
     color: '#6366F1',
     marginTop: 4,
   },
-  profileButton: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -471,6 +488,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#7C3AED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   tabContainer: {
     flexDirection: 'row',
