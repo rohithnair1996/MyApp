@@ -10,6 +10,7 @@ import SpacesScreen from './src/screens/SpacesScreen';
 import DummyScreen from './src/screens/DummyScreen';
 import CreateSpaceScreen from './src/screens/CreateSpaceScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +59,16 @@ export default function App() {
           <Stack.Screen
             name="Notifications"
             component={NotificationsScreen}
+            options={{
+              headerShown: false,
+              statusBarColor: '#F8F7FF',
+              statusBarTranslucent: true,
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
             options={{
               headerShown: false,
               statusBarColor: '#F8F7FF',

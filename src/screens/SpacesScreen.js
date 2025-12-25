@@ -254,7 +254,11 @@ const SpacesScreen = ({ navigation }) => {
               <Text style={styles.notificationBadgeText}>5</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Profile')}
+          >
             <Ionicons name="person-outline" size={22} color="#6366F1" />
           </TouchableOpacity>
         </View>
